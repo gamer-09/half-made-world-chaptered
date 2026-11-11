@@ -8,7 +8,7 @@
 import puppeteer from 'puppeteer-core';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const SITE = process.argv[3] || 'https://gamer-09.github.io/Half-made-world-Reference/';
+const SITE = process.argv[3] || 'https://gamer-09.github.io/half-made-world-chaptered/';
 
 // The entry to inspect — must exist in the deployed snapshot.
 const TARGET_ENTRY = process.argv[2] || 'The World Core Faith'; // 12.5k chars, no ## sections (the buggy branch)
