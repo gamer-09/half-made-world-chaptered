@@ -140,4 +140,46 @@ describe('ChapterGate action buttons', () => {
     expect(screen.getByRole('alert').textContent).toMatch(/Enter a code first/i);
     expect(gate.upload).not.toHaveBeenCalled();
   });
+
+  it('opens the register page and thuds when fields are missing', () => {
+    render(<ChapterGate gate={makeGate()} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Register code/i }));
+    expect(screen.getByRole('heading', { name: /Register a chapter code/i })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Register$/i }));
+
+    expect(screen.getByRole('alert').textContent).toMatch(/Enter a code/i);
+    expect(screen.getByLabelText(/Code/i).getAttribute('aria-invalid')).toBe('true');
+    expect(document.querySelector('.chapter-register-field')?.classList.contains('is-error')).toBe(
+      true,
+    );
+  });
+
+  it('flags the chapter field when only the code is filled', () => {
+    render(<ChapterGate gate={makeGate()} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Register code/i }));
+    fireEvent.change(screen.getByLabelText(/Code/i), { target: { value: 'CH4-SECRET' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Register$/i }));
+
+    expect(screen.getByRole('alert').textContent).toMatch(/Enter a chapter number/i);
+    expect(screen.getByLabelText('Chapter').getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByLabelText(/Code/i).getAttribute('aria-invalid')).toBeNull();
+  });
+
+  it('forges a code and stamps it onto the plate', async () => {
+    render(<ChapterGate gate={makeGate()} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Register code/i }));
+    fireEvent.change(screen.getByLabelText(/Code/i), { target: { value: 'CH4-SECRET' } });
+    fireEvent.change(screen.getByLabelText('Chapter'), { target: { value: '4' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Register$/i }));
+
+    // The ceremony replaces the form; its sparks converge instead of bursting.
+    expect(await screen.findByRole('heading', { name: /Code forged/i })).toBeTruthy();
+    expect(screen.getByText('CH4-SECRET')).toBeTruthy();
+    expect(document.querySelectorAll('.chapter-forge-spark').length).toBe(10);
+    expect(document.querySelector('.chapter-forge-key')).toBeTruthy();
+  });
 });

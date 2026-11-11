@@ -241,7 +241,11 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   }, []);
   const [registerCode, setRegisterCode] = useState('');
   const [registerChapter, setRegisterChapter] = useState('');
-  const [registerNote, setRegisterNote] = useState('');
+  const [registerError, setRegisterError] = useState('');
+  const [registerErrorField, setRegisterErrorField] = useState<'code' | 'chapter' | null>(null);
+  const [registerDenied, setRegisterDenied] = useState(false);
+  const [registerBusy, setRegisterBusy] = useState(false);
+  const [registerResult, setRegisterResult] = useState<{ code: string; chapter: number } | null>(null);
   const [redeemCode, setRedeemCode] = useState('');
   const [redeemError, setRedeemError] = useState('');
   const [redeemShaking, setRedeemShaking] = useState(false);
@@ -306,21 +310,48 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
     return () => window.clearTimeout(timer);
   }, [redeemResult]);
 
+  // Registration has its own motion language: a vertical deny/thud on bad
+  // input, and a key-forging ceremony on success (never the redeem shake).
+  const closeRegister = () => {
+    setRegisterOpen(false);
+    setRegisterCode('');
+    setRegisterChapter('');
+    setRegisterError('');
+    setRegisterErrorField(null);
+    setRegisterDenied(false);
+    setRegisterBusy(false);
+    setRegisterResult(null);
+  };
+
+  const failRegister = (message: string, field: 'code' | 'chapter' | null = null) => {
+    setRegisterError(message);
+    setRegisterErrorField(field);
+    setRegisterDenied(false);
+    const retrigger = () => setRegisterDenied(true);
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(retrigger);
+    } else {
+      window.setTimeout(retrigger, 0);
+    }
+  };
+
   const registerCodeFn = async () => {
+    if (registerBusy) return;
     const code = registerCode.trim();
     const ch = Number(registerChapter);
     if (!code) {
-      setRegisterNote('Enter a code.');
+      failRegister('Enter a code.', 'code');
       return;
     }
     if (!Number.isFinite(ch) || ch < 0 || registerChapter.trim() === '') {
-      setRegisterNote('Enter a chapter number.');
+      failRegister('Enter a chapter number.', 'chapter');
       return;
     }
     if (!canRegister) {
-      setRegisterNote('Registration is only available when running locally.');
+      failRegister('Registration is only available when running locally.');
       return;
     }
+    setRegisterBusy(true);
     try {
       const res = await fetch('/api/chapter-codes', {
         method: 'POST',
@@ -329,17 +360,31 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setRegisterNote(data?.error || 'Could not register that code.');
+        failRegister(data?.error || 'Could not register that code.');
         return;
       }
       setCodes((prev) => ({ ...prev, [code.toLowerCase()]: ch }));
-      setRegisterNote(`Registered “${code}” → chapter ${ch}.`);
       setRegisterCode('');
       setRegisterChapter('');
+      setRegisterError('');
+      setRegisterErrorField(null);
+      setRegisterResult({ code, chapter: ch });
     } catch {
-      setRegisterNote('Could not reach the server to register that code.');
+      failRegister('Could not reach the server to register that code.');
+    } finally {
+      setRegisterBusy(false);
     }
   };
+
+  // Hold the forged key on screen just long enough to read, then close.
+  useEffect(() => {
+    if (!registerResult) return;
+    const timer = window.setTimeout(() => {
+      setRegisterOpen(false);
+      setRegisterResult(null);
+    }, 3400);
+    return () => window.clearTimeout(timer);
+  }, [registerResult]);
 
   const onPickFile = async (file: File) => {
     setIsParsing(true);
@@ -629,40 +674,124 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
       )}
 
       {registerOpen && canRegister && (
-        <Modal onClose={() => setRegisterOpen(false)} wide>
+        <Modal onClose={closeRegister} wide>
           <div className="chapter-upload">
-            <h2 className="chapter-upload-title">Register a chapter code</h2>
-            <p className="chapter-upload-blurb">
-              Create a code that unlocks a chapter for readers who can't get the chapter text.
-            </p>
-            <label className="chapter-upload-num">
-              Code
-              <input
-                type="text"
-                value={registerCode}
-                onChange={(e) => setRegisterCode(e.target.value)}
-                placeholder="e.g. CH4-SECRET"
-              />
-            </label>
-            <label className="chapter-upload-num">
-              Chapter
-              <input
-                type="number"
-                min={0}
-                value={registerChapter}
-                onChange={(e) => setRegisterChapter(e.target.value)}
-                placeholder="e.g. 4"
-              />
-            </label>
-            {registerNote && <p className="chapter-upload-note">{registerNote}</p>}
-            <div className="chapter-upload-actions">
-              <button className="btn btn-ghost" onClick={() => setRegisterOpen(false)}>
-                Close
-              </button>
-              <button className="btn btn-primary" onClick={registerCodeFn}>
-                Register
-              </button>
-            </div>
+            {registerResult ? (
+              <div className="chapter-forge" role="status" aria-live="polite">
+                <div className="chapter-forge-stage" aria-hidden="true">
+                  <span className="chapter-forge-ring chapter-forge-ring--outer" />
+                  <span className="chapter-forge-ring chapter-forge-ring--inner" />
+                  <span className="chapter-forge-glint" />
+                  <span className="chapter-forge-stamp" />
+                  <span className="chapter-forge-key">
+                    <i className="fa-solid fa-key" />
+                  </span>
+                  {Array.from({ length: 10 }, (_, i) => (
+                    <span
+                      key={i}
+                      className="chapter-forge-spark"
+                      style={{ '--spark': i } as CSSProperties}
+                    />
+                  ))}
+                </div>
+                <h3 className="chapter-forge-title">Code forged</h3>
+                <p className="chapter-forge-plate">
+                  <code>{registerResult.code}</code>
+                  <span className="chapter-forge-arrow" aria-hidden="true">
+                    →
+                  </span>
+                  <span>Chapter {registerResult.chapter}</span>
+                </p>
+                <p className="chapter-forge-sub">Ready for readers who redeem it.</p>
+                <div className="chapter-forge-actions">
+                  <button className="btn btn-primary" onClick={closeRegister}>
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h2 className="chapter-upload-title">Register a chapter code</h2>
+                <p className="chapter-upload-blurb">
+                  Create a code that unlocks a chapter for readers who can't get the chapter text.
+                </p>
+                <div
+                  className={`chapter-register-fields${registerDenied ? ' deny' : ''}`}
+                  onAnimationEnd={() => setRegisterDenied(false)}
+                >
+                  <div
+                    className={`chapter-register-field${
+                      registerError && registerErrorField === 'code' ? ' is-error' : ''
+                    }`}
+                  >
+                    <label className="chapter-upload-num">
+                      Code
+                      <input
+                        type="text"
+                        value={registerCode}
+                        aria-invalid={
+                          registerError && registerErrorField === 'code' ? true : undefined
+                        }
+                        aria-describedby={registerError ? 'register-error' : undefined}
+                        onChange={(e) => {
+                          setRegisterCode(e.target.value);
+                          if (registerError) setRegisterError('');
+                        }}
+                        placeholder="e.g. CH4-SECRET"
+                      />
+                    </label>
+                  </div>
+                  <div
+                    className={`chapter-register-field${
+                      registerError && registerErrorField === 'chapter' ? ' is-error' : ''
+                    }`}
+                  >
+                    <label className="chapter-upload-num">
+                      Chapter
+                      <input
+                        type="number"
+                        min={0}
+                        value={registerChapter}
+                        aria-invalid={
+                          registerError && registerErrorField === 'chapter' ? true : undefined
+                        }
+                        aria-describedby={registerError ? 'register-error' : undefined}
+                        onChange={(e) => {
+                          setRegisterChapter(e.target.value);
+                          if (registerError) setRegisterError('');
+                        }}
+                        placeholder="e.g. 4"
+                      />
+                    </label>
+                  </div>
+                </div>
+                {registerError && (
+                  <p className="chapter-register-error" id="register-error" role="alert">
+                    <i className="fa-solid fa-circle-xmark" aria-hidden="true" /> {registerError}
+                  </p>
+                )}
+                <div className="chapter-upload-actions">
+                  <button className="btn btn-ghost" onClick={closeRegister} disabled={registerBusy}>
+                    Close
+                  </button>
+                  <button
+                    className={`btn btn-primary${registerBusy ? ' is-forging' : ''}`}
+                    onClick={registerCodeFn}
+                    disabled={registerBusy}
+                  >
+                    {registerBusy ? (
+                      <>
+                        <i className="fa-solid fa-hammer" aria-hidden="true" /> Forging…
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-hammer" aria-hidden="true" /> Register
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </Modal>
       )}

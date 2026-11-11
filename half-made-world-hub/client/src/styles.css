@@ -3352,6 +3352,283 @@ select.input {
   100% { opacity: 1; transform: none; }
 }
 
+/* ============ Register field / error feedback ============
+   Deliberately not the redeem language: invalid registration thuds
+   vertically and flags the offending field rather than shaking the row. */
+.chapter-register-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chapter-register-field.is-error .chapter-upload-num { color: var(--danger); }
+
+.chapter-register-field.is-error input {
+  border-color: var(--danger);
+  caret-color: var(--danger);
+  box-shadow:
+    0 0 0 1px rgba(194, 94, 74, 0.35),
+    inset 0 0 14px rgba(194, 94, 74, 0.08);
+}
+
+.chapter-register-fields.deny {
+  animation: registerDeny 0.4s cubic-bezier(0.68, -0.4, 0.32, 1.4) both;
+}
+
+@keyframes registerDeny {
+  0% { transform: translateY(0); }
+  22% { transform: translateY(-5px); }
+  48% { transform: translateY(3px); }
+  70% { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+
+.chapter-register-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger);
+  animation: registerErrorDrop 0.34s var(--ease-snap) both;
+}
+
+.chapter-register-error i { font-size: 11px; }
+
+@keyframes registerErrorDrop {
+  0% { opacity: 0; transform: translateY(-9px); }
+  70% { opacity: 1; transform: translateY(1px); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* Hammer taps while the registration request is in flight. */
+.btn.is-forging { cursor: progress; }
+.btn.is-forging i { animation: forgeHammer 0.45s ease-in-out infinite alternate; }
+
+@keyframes forgeHammer {
+  from { transform: rotate(-16deg); }
+  to { transform: rotate(18deg); }
+}
+
+/* ============ Code forging ceremony ============
+   Registering mints a key, so the success motion pulls inward: sparks
+   converge on a rounded-square forge frame, a stamp presses, a glint
+   sweeps the plate, and the new code is struck onto it. */
+.chapter-forge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 0 2px;
+  text-align: center;
+}
+
+.chapter-forge-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 168px;
+  height: 168px;
+  margin-bottom: 4px;
+  isolation: isolate;
+}
+
+.chapter-forge-ring {
+  position: absolute;
+  border-radius: 26%;
+  opacity: 0;
+  animation:
+    forgeRingIn 0.6s var(--ease-out) 0.05s forwards,
+    forgeRingSpin 9s linear infinite;
+}
+
+.chapter-forge-ring--outer {
+  inset: 6%;
+  border: 1px dashed rgba(200, 168, 118, 0.4);
+}
+
+.chapter-forge-ring--inner {
+  inset: 24%;
+  border: 1px solid rgba(200, 168, 118, 0.24);
+  border-top-color: var(--brass);
+  border-left-color: rgba(200, 168, 118, 0.5);
+  animation:
+    forgeRingIn 0.6s var(--ease-out) 0.16s forwards,
+    forgeRingSpin 6s linear infinite reverse;
+}
+
+.chapter-forge-key {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 18px;
+  color: var(--brass);
+  background: linear-gradient(160deg, #2a2318, #12151f 72%);
+  border: 1px solid rgba(200, 168, 118, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(200, 168, 118, 0.1),
+    0 0 24px rgba(200, 168, 118, 0.16),
+    inset 0 0 16px rgba(200, 168, 118, 0.1);
+  font-size: 24px;
+  animation: forgeKeyDrop 0.7s var(--ease-spring) both;
+}
+
+.chapter-forge-key i {
+  display: block;
+  transform-origin: 50% 90%;
+  animation: forgeKeyTurn 0.8s var(--ease-out) 0.6s both;
+}
+
+.chapter-forge-stamp {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  border: 2px solid rgba(200, 168, 118, 0.55);
+  opacity: 0;
+  animation: forgeStamp 0.65s var(--ease-snap) 0.55s both;
+}
+
+.chapter-forge-glint {
+  position: absolute;
+  inset: 18% 8%;
+  border-radius: 20%;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(200, 168, 118, 0.5) 50%,
+    transparent 70%
+  );
+  background-size: 220% 100%;
+  filter: blur(1px);
+  opacity: 0;
+  animation: forgeGlint 1.05s var(--ease-out) 0.78s both;
+}
+
+.chapter-forge-spark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 10px;
+  margin: -5px 0 0 -1.5px;
+  border-radius: 2px;
+  background: linear-gradient(var(--brass), transparent);
+  opacity: 0;
+  animation: forgeSpark 0.7s var(--ease-out) forwards;
+  animation-delay: calc(0.1s + var(--spark) * 0.03s);
+}
+
+.chapter-forge-title {
+  margin: 2px 0 0;
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  opacity: 0;
+  animation: forgeTextUp 0.5s var(--ease-out) 0.8s forwards;
+}
+
+.chapter-forge-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 6px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: rgba(200, 168, 118, 0.06);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--brass);
+  opacity: 0;
+  animation: forgePlateIn 0.55s var(--ease-spring) 0.92s both;
+}
+
+.chapter-forge-plate code {
+  font: inherit;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.chapter-forge-arrow { color: var(--brass); }
+
+.chapter-forge-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0;
+  animation: forgeTextUp 0.5s var(--ease-out) 1.05s forwards;
+}
+
+.chapter-forge-actions {
+  margin-top: 10px;
+  opacity: 0;
+  animation: forgeTextUp 0.5s var(--ease-out) 1.18s forwards;
+}
+
+@keyframes forgeRingIn {
+  from { opacity: 0; transform: scale(0.7) rotate(-12deg); }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes forgeRingSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes forgeKeyDrop {
+  from { opacity: 0; transform: translateY(-34px) rotate(-24deg) scale(0.6); }
+  60% { opacity: 1; }
+  to { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+}
+
+@keyframes forgeKeyTurn {
+  0% { transform: rotate(0deg); }
+  40% { transform: rotate(-16deg); }
+  70% { transform: rotate(10deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes forgeStamp {
+  0% { opacity: 0; transform: scale(1.6) translateY(-14px); }
+  55% { opacity: 0.9; transform: scale(0.94) translateY(0); }
+  70% { opacity: 0.5; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+
+@keyframes forgeGlint {
+  0% { opacity: 0; background-position: 130% 0; }
+  25% { opacity: 0.85; }
+  100% { opacity: 0; background-position: -30% 0; }
+}
+
+@keyframes forgeSpark {
+  0% {
+    opacity: 0;
+    transform: rotate(calc(var(--spark) * 36deg)) translateY(-88px) scaleY(0.6);
+  }
+  30% { opacity: 0.9; }
+  100% {
+    opacity: 0;
+    transform: rotate(calc(var(--spark) * 36deg)) translateY(-26px) scaleY(1);
+  }
+}
+
+@keyframes forgeTextUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes forgePlateIn {
+  from { opacity: 0; transform: scale(0.86); }
+  60% { opacity: 1; transform: scale(1.04); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 /* ============ Chapter unlock ceremony ============
    Seal-break sequence: two counter-rotating rune rings, a brass seal that
    springs in, a shockwave, a twelve-spark burst, then the chapter title and
@@ -3583,8 +3860,27 @@ select.input {
     display: none;
   }
   .chapter-code-field.shake,
-  .chapter-redeem-error {
+  .chapter-redeem-error,
+  .chapter-register-fields.deny,
+  .chapter-register-error,
+  .btn.is-forging i {
     animation: none;
+  }
+  .chapter-forge-ring,
+  .chapter-forge-key,
+  .chapter-forge-key i,
+  .chapter-forge-title,
+  .chapter-forge-plate,
+  .chapter-forge-sub,
+  .chapter-forge-actions {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .chapter-forge-stamp,
+  .chapter-forge-glint,
+  .chapter-forge-spark {
+    display: none;
   }
 }
 
