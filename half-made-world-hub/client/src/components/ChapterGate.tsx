@@ -794,6 +794,13 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
                     Redeem
                   </button>
                 </div>
+                <p className="chapter-redeem-note">
+                  <i className="fa-solid fa-feather-pointed" aria-hidden="true" />
+                  <span>
+                    For fun, keep the code to yourself — that way others get to read the book first,
+                    before turning to the entries for the details.
+                  </span>
+                </p>
               </>
             )}
           </div>

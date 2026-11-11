@@ -2940,6 +2940,27 @@ select.input {
   color: var(--brass);
 }
 
+/* A quiet aside under the redeem form: the code is a bookmark, not something to
+   pass around — the point is that the book gets read first. */
+.chapter-redeem-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--muted-2);
+}
+
+.chapter-redeem-note i {
+  flex: none;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--brass);
+}
+
 .chapter-code-field { position: relative; }
 
 .chapter-code-field.is-error .chapter-upload-num { color: var(--danger); }

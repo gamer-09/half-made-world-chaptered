@@ -169,6 +169,9 @@ describe('ChapterGate action buttons', () => {
     fireEvent.click(screen.getByRole('button', { name: /Redeem code/i }));
 
     expect(screen.getByText(/at the end of every chapter/i)).toBeTruthy();
+    // The aside asks readers to keep the code to themselves so others read first.
+    expect(screen.getByText(/keep the code to yourself/i)).toBeTruthy();
+    expect(screen.getByText(/read the book first/i)).toBeTruthy();
   });
 
   it('opens the register page and thuds when fields are missing', () => {
