@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import mammoth from 'mammoth';
@@ -244,6 +244,7 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   const [registerNote, setRegisterNote] = useState('');
   const [redeemCode, setRedeemCode] = useState('');
   const [redeemNote, setRedeemNote] = useState('');
+  const [redeemResult, setRedeemResult] = useState<{ chapter: number; title: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Every chapter the reader could be on: the known ones plus any uploaded.
@@ -254,6 +255,13 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   }, [gate.uploaded]);
 
   // Redeem code mode — standalone, its own page distinct from the upload modal
+  const closeRedeem = () => {
+    setRedeemOpen(false);
+    setRedeemCode('');
+    setRedeemNote('');
+    setRedeemResult(null);
+  };
+
   const handleRedeemCode = () => {
     const code = redeemCode.trim().toLowerCase();
     if (!code) {
@@ -266,9 +274,21 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
       return;
     }
     gate.upload(ch, '');
-    setRedeemNote(`Unlocked chapter ${ch}.`);
     setRedeemCode('');
+    setRedeemNote('');
+    setRedeemResult({ chapter: ch, title: chapterTitle(ch) });
   };
+
+  // Let the seal-break animation finish, then hand the reader back to the
+  // freshly unlocked archive instead of leaving them parked in the modal.
+  useEffect(() => {
+    if (!redeemResult) return;
+    const timer = window.setTimeout(() => {
+      setRedeemOpen(false);
+      setRedeemResult(null);
+    }, 3200);
+    return () => window.clearTimeout(timer);
+  }, [redeemResult]);
 
   const registerCodeFn = async () => {
     const code = registerCode.trim();
@@ -512,33 +532,66 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
       )}
 
       {redeemOpen && (
-        <Modal onClose={() => setRedeemOpen(false)} wide>
+        <Modal onClose={closeRedeem} wide>
           <div className="chapter-upload">
-            <h2 className="chapter-upload-title">Redeem a chapter code</h2>
-            <p className="chapter-upload-blurb">
-              Enter a chapter code to unlock the chapter tier and its manifest-gated entries.
-            </p>
-            <label className="chapter-upload-num">
-              Code
-              <input
-                type="text"
-                value={redeemCode}
-                onChange={(e) => setRedeemCode(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleRedeemCode();
-                }}
-                placeholder="e.g. CH1-AAA"
-              />
-            </label>
-            {redeemNote && <p className="chapter-upload-note">{redeemNote}</p>}
-            <div className="chapter-upload-actions">
-              <button className="btn btn-ghost" onClick={() => setRedeemOpen(false)}>
-                Close
-              </button>
-              <button className="btn btn-primary" onClick={handleRedeemCode}>
-                Redeem
-              </button>
-            </div>
+            {redeemResult ? (
+              <div className="chapter-unlock" role="status" aria-live="polite">
+                <div className="chapter-unlock-stage" aria-hidden="true">
+                  <span className="chapter-unlock-halo" />
+                  <span className="chapter-unlock-ring chapter-unlock-ring--outer" />
+                  <span className="chapter-unlock-ring chapter-unlock-ring--inner" />
+                  <span className="chapter-unlock-shock" />
+                  <span className="chapter-unlock-seal">
+                    <i className="fa-solid fa-lock chapter-unlock-lock" />
+                    <i className="fa-solid fa-lock-open chapter-unlock-lock-open" />
+                  </span>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <span
+                      key={i}
+                      className="chapter-unlock-spark"
+                      style={{ '--spark': i } as CSSProperties}
+                    />
+                  ))}
+                </div>
+                <h3 className="chapter-unlock-title">Chapter {redeemResult.chapter} unlocked</h3>
+                <p className="chapter-unlock-sub">
+                  Unlocked chapter {redeemResult.chapter} · {redeemResult.title}
+                </p>
+                <div className="chapter-unlock-actions">
+                  <button className="btn btn-primary" onClick={closeRedeem}>
+                    Continue reading
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h2 className="chapter-upload-title">Redeem a chapter code</h2>
+                <p className="chapter-upload-blurb">
+                  Enter a chapter code to unlock the chapter tier and its manifest-gated entries.
+                </p>
+                <label className="chapter-upload-num">
+                  Code
+                  <input
+                    type="text"
+                    value={redeemCode}
+                    onChange={(e) => setRedeemCode(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleRedeemCode();
+                    }}
+                    placeholder="e.g. CH1-AAA"
+                  />
+                </label>
+                {redeemNote && <p className="chapter-upload-note">{redeemNote}</p>}
+                <div className="chapter-upload-actions">
+                  <button className="btn btn-ghost" onClick={closeRedeem}>
+                    Close
+                  </button>
+                  <button className="btn btn-primary" onClick={handleRedeemCode}>
+                    Redeem
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </Modal>
       )}

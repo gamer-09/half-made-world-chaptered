@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ChapterGate } from '../components/ChapterGate';
 import type { ChapterGateApi } from '../hooks/useChapterGate';
 import type { GateConfig } from '../chapters/gate';
@@ -35,6 +35,7 @@ describe('ChapterGate action buttons', () => {
   beforeEach(() => stubFetch({ 'ch1-aaa': 1 }));
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -87,6 +88,32 @@ describe('ChapterGate action buttons', () => {
 
     expect(gate.upload).toHaveBeenCalledWith(1, '');
     expect(screen.getByText(/Unlocked chapter 1/i)).toBeTruthy();
+  });
+
+  it('plays the unlock ceremony and then hands the reader back to the archive', async () => {
+    const gate = makeGate();
+    render(<ChapterGate gate={gate} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
+
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole('button', { name: /Redeem code/i }));
+    fireEvent.change(screen.getByLabelText(/Code/i), { target: { value: 'CH1-AAA' } });
+
+    vi.useFakeTimers();
+    fireEvent.click(screen.getByRole('button', { name: /^Redeem$/i }));
+
+    // The ceremony replaces the form: seal, rune rings and a 12-spark burst.
+    expect(screen.getByRole('heading', { name: /Chapter 1 unlocked/i })).toBeTruthy();
+    expect(document.querySelectorAll('.chapter-unlock-spark').length).toBe(12);
+    expect(document.querySelector('.chapter-unlock-seal')).toBeTruthy();
+    expect(gate.upload).toHaveBeenCalledWith(1, '');
+
+    // The modal closes itself after the animation so the unlocked archive shows.
+    act(() => {
+      vi.advanceTimersByTime(3200);
+    });
+    expect(screen.queryByRole('heading', { name: /Chapter 1 unlocked/i })).toBeNull();
+    expect(gate.chapter).toBe(-1); // nothing else was mutated by the ceremony
   });
 
   it('shows an error for an unknown code without unlocking anything', () => {
