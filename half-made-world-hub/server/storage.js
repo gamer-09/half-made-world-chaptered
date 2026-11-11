@@ -9,6 +9,7 @@ const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'world.json');
 const REL_FILE = path.join(DATA_DIR, 'relationships.json');
 const LINK_FILE = path.join(DATA_DIR, 'story-links.json');
+const CODES_FILE = path.join(DATA_DIR, 'chapter-codes.json');
 
 function ensureDataFile() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -22,6 +23,9 @@ function ensureDataFile() {
   }
   if (!fs.existsSync(LINK_FILE)) {
     fs.writeFileSync(LINK_FILE, JSON.stringify(linkSeed, null, 2), 'utf-8');
+  }
+  if (!fs.existsSync(CODES_FILE)) {
+    fs.writeFileSync(CODES_FILE, JSON.stringify({}, null, 2), 'utf-8');
   }
 }
 
@@ -85,6 +89,29 @@ function resetStoryLinks() {
   return linkSeed;
 }
 
+// --- Chapter codes --------------------------------------------------------
+function loadChapterCodes() {
+  ensureDataFile();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(CODES_FILE, 'utf-8'));
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+  } catch (err) {
+    console.error('[storage] Failed to parse chapter-codes.json, resetting:', err.message);
+  }
+  return {};
+}
+
+function saveChapterCodes(map) {
+  ensureDataFile();
+  fs.writeFileSync(CODES_FILE, JSON.stringify(map || {}, null, 2), 'utf-8');
+  try {
+    const { scheduleSync } = require('./pipeline');
+    scheduleSync('chapter codes updated');
+  } catch {
+    /* pipeline unavailable — skip sync */
+  }
+}
+
 module.exports = {
   loadWorld,
   saveWorld,
@@ -95,7 +122,10 @@ module.exports = {
   loadStoryLinks,
   saveStoryLinks,
   resetStoryLinks,
+  loadChapterCodes,
+  saveChapterCodes,
   DATA_FILE,
   REL_FILE,
   LINK_FILE,
+  CODES_FILE,
 };

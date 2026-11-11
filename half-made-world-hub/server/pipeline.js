@@ -44,10 +44,19 @@ function writeIfChanged(file, content) {
 
 // Regenerate every derived artifact from the on-disk data. Returns the list of
 // file names that actually changed.
+function readJsonOptional(file, fallback) {
+  try {
+    return readJson(file);
+  } catch {
+    return fallback;
+  }
+}
+
 function syncAll() {
   const entries = readJson(path.join(DATA_DIR, 'world.json'));
   const rels = readJson(path.join(DATA_DIR, 'relationships.json'));
   const links = readJson(path.join(DATA_DIR, 'story-links.json'));
+  const chapterCodes = readJsonOptional(path.join(DATA_DIR, 'chapter-codes.json'), {});
 
   const generated = generateSeeds({ world: entries, links, rels });
   const changed = [];
@@ -55,7 +64,7 @@ function syncAll() {
     if (writeIfChanged(t.file, generated[t.key])) changed.push(path.basename(t.file));
   }
 
-  const snapshot = { entries, relationships: rels, storyLinks: links };
+  const snapshot = { entries, relationships: rels, storyLinks: links, chapterCodes };
   if (writeIfChanged(SNAPSHOT_FILE, JSON.stringify(snapshot, null, 2))) changed.push('snapshot.json');
 
   return changed;

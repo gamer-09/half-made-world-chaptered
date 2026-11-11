@@ -42,8 +42,8 @@ describe('loadSnapshot', () => {
     await loadSnapshot();
     await loadSnapshot();
 
-    // three live endpoints, once each
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    // four live endpoints (entries, relationships, story-links, chapter-codes), once each
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   it('refetches after the cache is invalidated', async () => {
@@ -53,7 +53,7 @@ describe('loadSnapshot', () => {
     invalidateSnapshot();
     await loadSnapshot();
 
-    expect(fetchMock).toHaveBeenCalledTimes(6);
+    expect(fetchMock).toHaveBeenCalledTimes(8);
   });
 
   it('asks the browser not to cache the live endpoints', async () => {

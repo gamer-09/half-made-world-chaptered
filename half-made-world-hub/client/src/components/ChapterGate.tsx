@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import mammoth from 'mammoth';
@@ -190,6 +190,46 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   const [codeInput, setCodeInput] = useState('');
   const [codeNote, setCodeNote] = useState('');
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [codes, setCodes] = useState<Record<string, number>>({});
+
+  // Registration is an authoring action: it writes to the server's data, so it
+  // only makes sense locally, not on the view-only GitHub Pages build.
+  const canRegister =
+    import.meta.env.DEV ||
+    (typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+
+  // Load the chapter-code map from the server when available, otherwise from
+  // the bundled snapshot that ships with the site.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/chapter-codes', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled && data && typeof data === 'object') setCodes(data as Record<string, number>);
+          return;
+        }
+      } catch {
+        /* fall through */
+      }
+      try {
+        const res = await fetch(import.meta.env.BASE_URL + 'snapshot.json');
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled && data?.chapterCodes && typeof data.chapterCodes === 'object') {
+            setCodes(data.chapterCodes as Record<string, number>);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [registerCode, setRegisterCode] = useState('');
   const [registerChapter, setRegisterChapter] = useState('');
   const [registerNote, setRegisterNote] = useState('');
@@ -202,33 +242,13 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
     return [...nums].sort((a, b) => a - b);
   }, [gate.uploaded]);
 
-  function loadChapterCodes(): Record<string, number> {
-    try {
-      const raw = localStorage.getItem('hmw-chapter-codes');
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') return parsed as Record<string, number>;
-    } catch {
-      /* ignore */
-    }
-    return {};
-  }
-  function saveChapterCodes(map: Record<string, number>) {
-    try {
-      localStorage.setItem('hmw-chapter-codes', JSON.stringify(map));
-    } catch {
-      /* ignore */
-    }
-  }
-
   const redeemCode = () => {
     const code = codeInput.trim();
     if (!code) {
       setCodeNote('Enter a code first.');
       return;
     }
-    const map = loadChapterCodes();
-    const ch = map[code.toLowerCase()];
+    const ch = codes[code.toLowerCase()];
     if (ch === undefined) {
       setCodeNote('Unknown code.');
       return;
@@ -238,7 +258,7 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
     setCodeInput('');
   };
 
-  const registerCodeFn = () => {
+  const registerCodeFn = async () => {
     const code = registerCode.trim();
     const ch = Number(registerChapter);
     if (!code) {
@@ -249,12 +269,28 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
       setRegisterNote('Enter a chapter number.');
       return;
     }
-    const map = loadChapterCodes();
-    map[code.toLowerCase()] = ch;
-    saveChapterCodes(map);
-    setRegisterNote(`Registered “${code}” → chapter ${ch}.`);
-    setRegisterCode('');
-    setRegisterChapter('');
+    if (!canRegister) {
+      setRegisterNote('Registration is only available when running locally.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/chapter-codes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, chapter: ch }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setRegisterNote(data?.error || 'Could not register that code.');
+        return;
+      }
+      setCodes((prev) => ({ ...prev, [code.toLowerCase()]: ch }));
+      setRegisterNote(`Registered “${code}” → chapter ${ch}.`);
+      setRegisterCode('');
+      setRegisterChapter('');
+    } catch {
+      setRegisterNote('Could not reach the server to register that code.');
+    }
   };
 
   const onPickFile = async (file: File) => {
@@ -349,9 +385,11 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
           <button className="btn btn-ghost btn-sm" onClick={() => onUploadOpenChange(true)} title="Paste or upload a chapter">
             <i className="fa-solid fa-file-arrow-up" /> Upload a chapter
           </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => setRegisterOpen(true)} title="Register a chapter code">
-            <i className="fa-solid fa-key" /> Register code
-          </button>
+          {canRegister && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setRegisterOpen(true)} title="Register a chapter code">
+              <i className="fa-solid fa-key" /> Register code
+            </button>
+          )}
           {(gate.chapter >= 0 || Object.keys(gate.uploaded).length > 0) && (
             <button className="btn btn-ghost btn-sm" onClick={gate.reset} title="Forget every upload and lock everything">
               <i className="fa-solid fa-rotate-left" /> Reset
@@ -457,7 +495,7 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
         </Modal>
       )}
 
-      {registerOpen && (
+      {registerOpen && canRegister && (
         <Modal onClose={() => setRegisterOpen(false)} wide>
           <div className="chapter-upload">
             <h2 className="chapter-upload-title">Register a chapter code</h2>

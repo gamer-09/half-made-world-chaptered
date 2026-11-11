@@ -15,6 +15,8 @@ const {
   loadStoryLinks,
   saveStoryLinks,
   resetStoryLinks,
+  loadChapterCodes,
+  saveChapterCodes,
 } = require('./storage');
 const { lintArchive, lintEntry } = require('./canon-rules');
 
@@ -262,6 +264,36 @@ function makeLinkRoutes(collection, loader, saver, label) {
 
 makeLinkRoutes('relationships', loadRelationships, saveRelationships, 'Relationship');
 makeLinkRoutes('story-links', loadStoryLinks, saveStoryLinks, 'Story link');
+
+// --- Chapter codes --------------------------------------------------------
+app.get('/api/chapter-codes', (req, res) => {
+  res.json(loadChapterCodes());
+});
+
+app.post('/api/chapter-codes', (req, res) => {
+  const { code, chapter } = req.body || {};
+  if (!code || !String(code).trim()) {
+    return res.status(400).json({ error: 'A code is required' });
+  }
+  const ch = Number(chapter);
+  if (!Number.isFinite(ch) || ch < 0 || String(chapter ?? '').trim() === '') {
+    return res.status(400).json({ error: 'A chapter number is required' });
+  }
+  const map = loadChapterCodes();
+  const key = String(code).trim().toLowerCase();
+  map[key] = ch;
+  saveChapterCodes(map);
+  res.status(201).json({ ok: true, code: String(code).trim(), chapter: ch });
+});
+
+app.delete('/api/chapter-codes/:code', (req, res) => {
+  const map = loadChapterCodes();
+  const key = decodeURIComponent(req.params.code).toLowerCase().trim();
+  if (!(key in map)) return res.status(404).json({ error: 'Code not found' });
+  delete map[key];
+  saveChapterCodes(map);
+  res.json({ ok: true });
+});
 
 // --- Reset ----------------------------------------------------------------
 app.post('/api/reset', (req, res) => {

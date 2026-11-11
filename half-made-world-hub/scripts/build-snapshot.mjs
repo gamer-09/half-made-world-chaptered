@@ -20,6 +20,14 @@ for (const [key, file] of Object.entries(files)) {
   snapshot[key] = JSON.parse(raw);
 }
 
+// Chapter codes are optional on disk; ship an empty map if absent.
+try {
+  const raw = await readFile(resolve(serverDataDir, 'chapter-codes.json'), 'utf8');
+  snapshot.chapterCodes = JSON.parse(raw);
+} catch {
+  snapshot.chapterCodes = {};
+}
+
 await writeFile(
   resolve(clientPublicDir, 'snapshot.json'),
   JSON.stringify(snapshot, null, 2),

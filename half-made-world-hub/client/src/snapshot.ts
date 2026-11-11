@@ -5,6 +5,7 @@ export type SnapshotData = {
   entries: Entry[];
   relationships: Relationship[];
   storyLinks: StoryLink[];
+  chapterCodes?: Record<string, number>;
 };
 
 let cached: SnapshotData | null = null;
@@ -31,8 +32,14 @@ export async function loadSnapshot(): Promise<SnapshotData> {
     const entries = await fetch('/api/entries', { cache: 'no-store' }).then((r) => r.json());
     const relationships = await fetch('/api/relationships', { cache: 'no-store' }).then((r) => r.json());
     const storyLinks = await fetch('/api/story-links', { cache: 'no-store' }).then((r) => r.json());
+    let chapterCodes: Record<string, number> | undefined;
+    try {
+      chapterCodes = await fetch('/api/chapter-codes', { cache: 'no-store' }).then((r) => r.json());
+    } catch {
+      /* ignore */
+    }
     if (entries?.length && relationships?.length && storyLinks?.length) {
-      raw = { entries, relationships, storyLinks };
+      raw = { entries, relationships, storyLinks, chapterCodes };
     }
   } catch {
     /* live server not available — fall through to snapshot */
