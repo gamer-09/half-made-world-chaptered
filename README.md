@@ -46,6 +46,7 @@ and saved through the UI itself.
 | `npm run seeds:sync` | Regenerates the seed files only |
 | `npm run seeds:check` | Exits non-zero if the seed files are out of sync with the data (used by CI) |
 | `npm test --prefix client` | Runs the client unit tests (Vitest) |
+| `npm run test:server` | Runs the server unit tests (`node --test`) |
 
 ## Keyboard shortcuts
 
@@ -110,6 +111,10 @@ Each entry has:
 - `description` — the main text
 - `fields` — structured key/value details (e.g. Rank, Appearance, Skills)
 - `tags` — freeform search tags
+
+Chapter gates are stored separately: `server/data/chapter-codes.json` maps a code to the chapter it
+unlocks, and `client/public/snapshot.json` carries that map (plus the reveal checks) into the built
+client.
 
 ## Relationship Map
 
@@ -216,6 +221,19 @@ Two optional toggles apply to the HTTP backend: `AI_REASONING=true` sends `reaso
 
 Same CRUD shape as relationships, under `/api/story-links`.
 
+**Chapter codes**
+
+| Method | Route | Description |
+| --- | --- | --- |
+| GET | `/api/chapter-codes` | The code → chapter map (`{ "cha-1-aaa": 1 }`) |
+| POST | `/api/chapter-codes` | Register `{ code, chapter }`; `409` if the code or chapter is taken |
+| PUT | `/api/chapter-codes/:code` | Rename and/or retarget a code; `404` if unknown, `409` on a clash |
+| DELETE | `/api/chapter-codes/:code` | Remove a code; `404` if unknown |
+
+Every write also runs the sync pipeline (regenerating `snapshot.json`) and then, when the hub is
+running from a git checkout, commits and pushes the two chapter-code files automatically. Each
+`409` body carries `{ field, error }`, where `field` is `code` or `chapter`.
+
 **Search & AI**
 
 | Method | Route | Description |
@@ -223,19 +241,23 @@ Same CRUD shape as relationships, under `/api/story-links`.
 | GET | `/api/search` | Full-text search across the archive (`?q=…`) |
 | POST | `/api/ai/answer` | Answer a natural-language question from the archive contents |
 | POST | `/api/ai/explore` | AI-guided exploration/discovery across the archive |
-| POST | `/api/ai/flavor` | Flavor Finder — descriptors, scene rewrite, scene craft, or sound words |
-| POST | `/api/ai/plan` | Draft a new entry that fits the archive (questions-first; local dev only) |
-| POST | `/api/ai/plan/session/delete` | Delete the temporary AI session file(s) a plan created on disk |
-| GET | `/api/ai/status` | Which AI features are live right now (planner enabled / configured) |
-| POST | `/api/canon/lint` | Canon Guard — findings for the whole archive, or for one draft entry |
+| GET | `/api/ai/status` | Which AI features are live right now |
+| POST | `/api/convert/doc` | Extract the text of an uploaded `.doc`/`.docx` for the chapter gate |
 
 ## Tests and CI
 
-The client has a Vitest suite (`npm test --prefix client`) covering the search index, the
-description renderer and markdown tables, the canon rules, and the chapter gate (entry/field
-reveal, auto-scan, and link pruning).
+Two suites, both run locally and in CI:
+
+- **Client** (`npm test --prefix client`, Vitest) — the search index, the description renderer and
+  markdown tables, the chapter gate (entry/field reveal, auto-scan, link pruning, and the
+  upload/redeem/register flows), the snapshot loader, and the sound effects.
+- **Server** (`npm run test:server`, `node --test`) — the AI provider fallback chain, the
+  chapter-code rules (one code per chapter, no duplicate code names), and the chapter-code
+  auto-push guards.
 
 Every push to `main` runs the GitHub Actions workflow in `.github/workflows/deploy-ghpages.yml`:
-it installs the client dependencies, runs the unit tests, checks that the seed files still match
-`server/data/*.json` (`npm run seeds:check`), builds the client, and deploys `client/dist` to
-GitHub Pages. The same workflow is what keeps the live archive in step with the committed data.
+it installs the client and server dependencies, runs both test suites, checks that the seed files
+still match `server/data/*.json` (`npm run seeds:check`), builds the client, and deploys
+`client/dist` to GitHub Pages. The deploy builds from the **committed**
+`client/public/snapshot.json`, which is why registering a code pushes that file — an uncommitted
+code never reaches the live site.
