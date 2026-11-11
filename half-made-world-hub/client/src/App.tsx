@@ -30,12 +30,13 @@ import { FlavorFinder } from './components/FlavorFinder';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LinkForm } from './components/LinkForm';
 import { Modal } from './components/Modal';
+import { ChapterGate } from './components/ChapterGate';
+import { useChapterGate } from './hooks/useChapterGate';
+import { setActiveGate } from './chapters/gate';
 import { RELATIONSHIP_TYPES, relationshipType } from './relationshipTypes';
 import { STORY_LINK_TYPES, storyLinkType } from './storyLinkTypes';
 import { findCharacter } from './nameMatch';
 import { categoryColor } from './theme';
-
-const canEdit = import.meta.env.DEV;
 
 function download(filename: string, content: string, mime: string) {
   const blob = new Blob([content], { type: mime });
@@ -70,7 +71,14 @@ function buildMarkdown(entries: Entry[]): string {
 }
 
 export default function App() {
+  const gate = useChapterGate();
+  // Publish the gate before the archive loads so the first fetch is already
+  // sliced — otherwise the full archive would flash before the reload.
+  setActiveGate(gate.config);
   const archive = useArchive();
+  // The chapter gate is the reader's mode; editing is only possible when the
+  // gate is off (author mode) and we are in a dev build.
+  const canEdit = import.meta.env.DEV && gate.off;
   const entries = archive.entries;
   const relationships = archive.relationships;
   const storyLinks = archive.storyLinks;
@@ -114,9 +122,12 @@ export default function App() {
     await archive.load();
   }, [archive.load]);
 
+  // Reload whenever the unlocked chapter changes — loadSnapshot() re-slices the
+  // archive through the active gate on every load.
   useEffect(() => {
+    setActiveGate(gate.config);
     load();
-  }, [load]);
+  }, [load, gate.config]);
 
   // Remember the most recent entries the user opened.
   useEffect(() => {
@@ -184,7 +195,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [canEdit]);
 
   const categories = useMemo(() => {
     const counts = new Map<string, number>();
@@ -589,7 +600,7 @@ export default function App() {
                 <span className="main-count">{filtered.length}</span>
               )}
               {!canEdit && !isMapView && !isWebView && !isBlocksView && (
-                <span className="main-mode">view-only build</span>
+                <span className="main-mode">{gate.off ? 'view-only build' : 'chapter-gated'}</span>
               )}
             </h2>
             <p className="main-sub">
@@ -651,6 +662,8 @@ export default function App() {
           </div>
         </header>
 
+        <ChapterGate gate={gate} stats={archive.gateStats} />
+
         <div className={`view-transition${isBlocksView || isPlanningView || isCanonView || isWeaveView || isFlavorView ? ' view-fill' : ''}`} key={viewKey}>
         {loading ? (
           <div className="loading">
@@ -663,6 +676,17 @@ export default function App() {
             <p className="empty-text">{error}</p>
             <button className="btn btn-secondary" onClick={load}>
               Retry
+            </button>
+          </div>
+        ) : !gate.off && gate.chapter < 0 ? (
+          <div className="empty-state">
+            <p className="empty-title">The archive is sealed.</p>
+            <p className="empty-text">
+              Unlock a chapter to reveal what the story has reached so far. Entries and details
+              the chapters haven’t reached yet stay locked until you get there.
+            </p>
+            <button className="btn btn-primary" onClick={() => gate.unlock(0)}>
+              Start with Chapter 0
             </button>
           </div>
         ) : isFlavorView ? (

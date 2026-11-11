@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Entry, Relationship, StoryLink } from '../types';
-import { invalidateSnapshot, loadSnapshot } from '../snapshot';
+import { getGateStats, invalidateSnapshot, loadSnapshot } from '../snapshot';
+import type { GateStats } from '../chapters/gate';
 
 export type ArchiveMode = 'loading' | 'ready';
 
@@ -9,6 +10,7 @@ export interface ArchiveState {
   entries: Entry[];
   relationships: Relationship[];
   storyLinks: StoryLink[];
+  gateStats: GateStats | null;
   error: string;
 }
 
@@ -18,6 +20,7 @@ function emptyState(): ArchiveState {
     entries: [],
     relationships: [],
     storyLinks: [],
+    gateStats: null,
     error: '',
   };
 }
@@ -39,6 +42,7 @@ export function useArchive() {
         entries: data.entries,
         relationships: data.relationships,
         storyLinks: data.storyLinks,
+        gateStats: getGateStats(),
         error: '',
       });
     } catch (err) {

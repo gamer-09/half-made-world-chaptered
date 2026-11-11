@@ -1,4 +1,5 @@
 import type { CategoryInfo, Entry, Relationship, StoryLink } from './types';
+import { applyGate, getActiveGate, type GateStats } from './chapters/gate';
 
 export type SnapshotData = {
   entries: Entry[];
@@ -7,14 +8,29 @@ export type SnapshotData = {
 };
 
 let cached: SnapshotData | null = null;
+let cachedStats: GateStats | null = null;
 
 /** Drop the in-memory copy so the next loadSnapshot() refetches. */
 export function invalidateSnapshot() {
   cached = null;
+  cachedStats = null;
+}
+
+/** Gate statistics for the slice currently loaded (null before first load). */
+export function getGateStats(): GateStats | null {
+  return cachedStats;
+}
+
+/** The full, ungated archive — used by author mode and exports. */
+let rawCached: SnapshotData | null = null;
+export function getRawSnapshot(): SnapshotData | null {
+  return rawCached;
 }
 
 export async function loadSnapshot(): Promise<SnapshotData> {
   if (cached) return cached;
+
+  let raw: SnapshotData | null = null;
 
   // Try the live server first (dev mode with the Node API running).
   try {
@@ -22,24 +38,33 @@ export async function loadSnapshot(): Promise<SnapshotData> {
     const relationships = await fetch('/api/relationships', { cache: 'no-store' }).then((r) => r.json());
     const storyLinks = await fetch('/api/story-links', { cache: 'no-store' }).then((r) => r.json());
     if (entries?.length && relationships?.length && storyLinks?.length) {
-      cached = { entries, relationships, storyLinks };
-      return cached;
+      raw = { entries, relationships, storyLinks };
     }
   } catch {
     /* live server not available — fall through to snapshot */
   }
 
   // Fallback: load the bundled snapshot.json (view-only build / GitHub Pages).
-  const res = await fetch(import.meta.env.BASE_URL + 'snapshot.json');
-  if (!res.ok) {
-    throw new Error(`Failed to load the archive (${res.status})`);
+  if (!raw) {
+    const res = await fetch(import.meta.env.BASE_URL + 'snapshot.json');
+    if (!res.ok) {
+      throw new Error(`Failed to load the archive (${res.status})`);
+    }
+    const data = (await res.json()) as SnapshotData;
+    if (!data?.entries || !data?.relationships || !data?.storyLinks) {
+      throw new Error('The archive is missing data');
+    }
+    raw = data;
   }
-  const data = await res.json() as SnapshotData;
-  if (!data?.entries || !data?.relationships || !data?.storyLinks) {
-    throw new Error('The archive is missing data');
-  }
-  cached = data;
-  return data;
+
+  rawCached = raw;
+
+  // Apply the chapter gate (no-op when it is switched off).
+  const gate = getActiveGate();
+  const gated = applyGate(raw, gate ?? { chapter: Infinity, uploaded: {}, off: true });
+  cachedStats = gated.stats;
+  cached = { entries: gated.entries, relationships: gated.relationships, storyLinks: gated.storyLinks };
+  return cached;
 }
 
 export function getSnapshot(): SnapshotData | null {

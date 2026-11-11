@@ -1,10 +1,14 @@
-# Half-Made World — Reference
+# Half-Made World — Chaptered
 
-**[Open the live archive →](https://gamer-09.github.io/Half-made-world-Reference/)**
+**[Open the live archive →](https://gamer-09.github.io/half-made-world-chaptered/)**
 
 Reference archive for the *Half-Made World* fantasy novel — a searchable, editable knowledge base
 for its lore, magic systems, and characters, built as an interactive web app so world details never
 have to live buried in a single document again.
+
+This is the **chaptered** edition: the hub only reveals what the story has reached. Upload your
+chapters and the archive opens up alongside them — everything past your current chapter stays
+locked. See [The chapter gate](#the-chapter-gate).
 
 ## What's in this repo
 
@@ -48,9 +52,36 @@ and saved through the UI itself.
 | Key | Action |
 | --- | --- |
 | `/` | Focus the search box |
-| `n` | Add an entry (local dev only — the deployed build shows a "view-only" toast) |
+| `n` | Add an entry (author mode / local dev only — otherwise a "locked" toast) |
 | `1` – `5` | Browse · Relationship Map · Story Web · Block Map · Query Chat |
-| `6` – `9` | Planning · Canon Guard · Weave · Flavor Finder (local dev only) |
+| `6` – `9` | Planning · Canon Guard · Weave · Flavor Finder (author mode / local dev only) |
+
+## The chapter gate
+
+The archive is written ahead of the story, so on its own it spoils things the reader hasn't
+reached. The **chapter gate** holds that back: the hub shows only the entries and details the
+chapters you've unlocked actually put on the page.
+
+- **Unlock a chapter** from the bar under the header — bundled chapters (0–3) are listed, and any
+  chapter you upload is added to the row. Unlocking chapter *N* reveals chapter *N* and everything
+  before it, cumulatively.
+- **Upload a chapter** (the *Upload* button) by choosing a file or pasting its text. The chapter
+  number is read from the filename or the text (`chapter 4`, `4: …`, `Part 4`); you can always set
+  it by hand. Uploaded prose is scanned for entry names, so an entry a chapter names but the
+  curated list doesn't cover is revealed too.
+- **Entries and details unlock at different times.** An entry can appear while its subtitle,
+  description, or individual fields stay sealed — locked fields render as a "Revealed in
+  Chapter N" note instead of their value. Entries the story hasn't reached at all are removed from
+  the archive, and links that touch them are dropped.
+- **Reveal rules** are a curated manifest (`client/src/chapters/manifest.ts`) plus an auto-scan of
+  the unlocked chapter text. The manifest is authoritative for curated entries and is where you
+  hold back details a mere mention shouldn't leak; the auto-scan only fills in uncurated entries.
+- **Author mode.** *Reveal all* bypasses the gate and restores the full archive — and editing —
+  for local development. *Re-enable gate* and *Reset* lock it back down. Your chapter progress is
+  remembered in `localStorage`.
+
+While the gate is on, the hub is **read-only** even in local dev: the gate is the reader's mode,
+so add/edit/delete and the planning tools only appear once you switch to author mode.
 
 ## Interface notes
 
@@ -274,7 +305,8 @@ Same CRUD shape as relationships, under `/api/story-links`.
 ## Tests and CI
 
 The client has a Vitest suite (`npm test --prefix client`) covering the search index, the
-description renderer and markdown tables, the canon rules, the Flavor Finder, and the Weave eras.
+description renderer and markdown tables, the canon rules, the Flavor Finder, the Weave eras, and
+the chapter gate (entry/field reveal, auto-scan, and link pruning).
 
 Every push to `main` runs the GitHub Actions workflow in `.github/workflows/deploy-ghpages.yml`:
 it installs the client dependencies, runs the unit tests, checks that the seed files still match

@@ -51,7 +51,19 @@ export function EntryCard({ entry, onClick, query = '', onSelectTag }: EntryCard
       </div>
       <h3 className="entry-card-name">{highlight(entry.name, query)}</h3>
       {entry.subtitle && <p className="entry-card-subtitle">{highlight(entry.subtitle, query)}</p>}
-      <p className="entry-card-desc">{highlight(entry.description, query)}</p>
+      {entry.description ? (
+        <p className="entry-card-desc">{highlight(entry.description, query)}</p>
+      ) : entry.lockedDescription ? (
+        <p className="entry-card-desc entry-card-desc--locked">
+          <i className="fa-solid fa-lock" aria-hidden="true" /> Entry sealed
+        </p>
+      ) : null}
+      {(entry.lockedFieldCount ?? 0) > 0 && (
+        <p className="entry-card-locked">
+          <i className="fa-solid fa-lock" aria-hidden="true" /> {entry.lockedFieldCount} detail
+          {entry.lockedFieldCount === 1 ? '' : 's'} locked
+        </p>
+      )}
       {entry.tags.length > 0 && (
         <div className="entry-card-tags">
           {entry.tags.slice(0, 3).map((tag) =>

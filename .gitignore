@@ -12,3 +12,9 @@ Thumbs.db
 # temp files
 docx_temp/
 tmp/
+
+# scratch / stray backups that are not part of the repo
+fix_css.js
+*.bak-*.docx
+half-made-world-hub/server/data/*.bak-*
+/package-lock.json

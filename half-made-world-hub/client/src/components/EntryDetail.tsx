@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { ConnectionInfo, Entry } from '../types';
 import { categoryColor } from '../theme';
+import { lockLabel } from '../chapters/manifest';
 import { DescriptionRenderer } from './DescriptionRenderer';
 
 interface EntryDetailProps {
@@ -11,8 +12,18 @@ interface EntryDetailProps {
   onOpenEntry: (name: string) => void;
 }
 
+function LockedNote({ chapter, compact }: { chapter?: number; compact?: boolean }) {
+  return (
+    <span className={`locked-note${compact ? ' locked-note--compact' : ''}`}>
+      <i className="fa-solid fa-lock" aria-hidden="true" />
+      <span>{lockLabel(chapter)}</span>
+    </span>
+  );
+}
+
 export function EntryDetail({ entry, connections, onEdit, onDelete, onOpenEntry }: EntryDetailProps) {
   const accent = categoryColor(entry.category);
+  const lockedFields = entry.fields.filter((f) => f.locked).length;
   return (
     <div className="detail" style={{ '--accent': accent } as CSSProperties}>
       <header className="detail-hero">
@@ -30,19 +41,50 @@ export function EntryDetail({ entry, connections, onEdit, onDelete, onOpenEntry 
 
       <div className="detail-title-block">
         <h2 className="detail-name">{entry.name}</h2>
-        {entry.subtitle && <p className="detail-subtitle">{entry.subtitle}</p>}
+        {entry.lockedSubtitle ? (
+          <p className="detail-subtitle detail-subtitle--locked">
+            <i className="fa-solid fa-lock" aria-hidden="true" /> {lockLabel(entry.subtitleUnlocksChapter)}
+          </p>
+        ) : (
+          entry.subtitle && <p className="detail-subtitle">{entry.subtitle}</p>
+        )}
       </div>
 
-      <DescriptionRenderer text={entry.description} />
+      {entry.lockedDescription ? (
+        <div className="detail-locked-block">
+          <i className="fa-solid fa-lock" aria-hidden="true" />
+          <div>
+            <p className="detail-locked-title">This entry is still sealed.</p>
+            <p className="detail-locked-text">
+              What the archive knows about {entry.name} isn’t revealed yet — {lockLabel(entry.descriptionUnlocksChapter).toLowerCase()}.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <DescriptionRenderer text={entry.description} />
+      )}
 
       {entry.fields.length > 0 && (
         <section className="detail-section">
-          <h3 className="detail-section-title">Details</h3>
+          <h3 className="detail-section-title">
+            Details
+            {lockedFields > 0 && (
+              <span className="detail-locked-count">
+                {lockedFields} locked
+              </span>
+            )}
+          </h3>
           <dl className="detail-fields">
             {entry.fields.map((field, i) => (
-              <div className="detail-field" key={`${field.label}-${i}`}>
+              <div className={`detail-field${field.locked ? ' detail-field--locked' : ''}`} key={`${field.label}-${i}`}>
                 <dt>{field.label}</dt>
-                <dd>{field.value}</dd>
+                {field.locked ? (
+                  <dd>
+                    <LockedNote chapter={field.unlocksChapter} compact />
+                  </dd>
+                ) : (
+                  <dd>{field.value}</dd>
+                )}
               </div>
             ))}
           </dl>

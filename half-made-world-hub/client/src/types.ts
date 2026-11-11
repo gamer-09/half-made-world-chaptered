@@ -1,6 +1,10 @@
 export interface Field {
   label: string;
   value: string;
+  /** True when the chapter gate is holding this detail back. */
+  locked?: boolean;
+  /** Chapter that reveals the field (or 9999/undefined for "not yet"). */
+  unlocksChapter?: number;
 }
 
 export interface Entry {
@@ -13,6 +17,15 @@ export interface Entry {
   tags: string[];
   createdAt: string;
   updatedAt: string;
+  // --- Chapter-gate annotations (set by the gate, absent when ungated) ---
+  /** Chapter this entry first becomes visible in. */
+  unlocksChapter?: number;
+  lockedSubtitle?: boolean;
+  subtitleUnlocksChapter?: number;
+  lockedDescription?: boolean;
+  descriptionUnlocksChapter?: number;
+  /** How many of `fields` are still locked. */
+  lockedFieldCount?: number;
 }
 
 export interface CategoryInfo {
