@@ -165,6 +165,7 @@ export const fileToText = extractTextFromFile;
 export const getTextFromFile = extractTextFromFile;
 import type { ChapterGateApi } from '../hooks/useChapterGate';
 import { hasChapterProse, parseChapterNumber } from '../hooks/useChapterGate';
+import { verifyChapter, type ChapterCheck } from '../chapters/chapterCheck';
 import { CHAPTERS } from '../chapters/manifest';
 import type { GateStats } from '../chapters/gate';
 import { Modal } from './Modal';
@@ -191,6 +192,7 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   const [codeNote, setCodeNote] = useState('');
   const [registerOpen, setRegisterOpen] = useState(false);
   const [codes, setCodes] = useState<Record<string, number>>({});
+  const [chapterChecks, setChapterChecks] = useState<Record<string, ChapterCheck>>({});
 
   // Registration is an authoring action: it writes to the server's data, so it
   // only makes sense locally, not on the view-only GitHub Pages build.
@@ -199,27 +201,35 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
     (typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
 
-  // Load the chapter-code map from the server when available, otherwise from
-  // the bundled snapshot that ships with the site.
+  // Load the chapter-code map from the server when available, and the chapter
+  // fingerprints from the bundled snapshot (the only place they exist).
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      let codesFromServer = false;
       try {
         const res = await fetch('/api/chapter-codes', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          if (!cancelled && data && typeof data === 'object') setCodes(data as Record<string, number>);
-          return;
+          if (!cancelled && data && typeof data === 'object') {
+            setCodes(data as Record<string, number>);
+            codesFromServer = true;
+          }
         }
       } catch {
-        /* fall through */
+        /* fall through to the snapshot */
       }
       try {
         const res = await fetch(import.meta.env.BASE_URL + 'snapshot.json');
         if (res.ok) {
           const data = await res.json();
-          if (!cancelled && data?.chapterCodes && typeof data.chapterCodes === 'object') {
-            setCodes(data.chapterCodes as Record<string, number>);
+          if (!cancelled) {
+            if (!codesFromServer && data?.chapterCodes && typeof data.chapterCodes === 'object') {
+              setCodes(data.chapterCodes as Record<string, number>);
+            }
+            if (data?.chapterChecks && typeof data.chapterChecks === 'object') {
+              setChapterChecks(data.chapterChecks as Record<string, ChapterCheck>);
+            }
           }
         }
       } catch {
@@ -342,6 +352,20 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
       setUploadNote('Enter a chapter number first.');
       return;
     }
+    const verdict = verifyChapter(uploadText, n, chapterChecks);
+    if (verdict.status === 'incomplete') {
+      const pct = Math.round(verdict.coverage * 100);
+      setUploadNote(
+        pct === 0
+          ? `That doesn’t read as Chapter ${n}. Paste the full chapter text or choose the file.`
+          : `That’s only about ${pct}% of Chapter ${n}. The whole chapter is needed to unlock it.`,
+      );
+      return;
+    }
+    if (verdict.status === 'wrong-chapter') {
+      setUploadNote(`That text is Chapter ${verdict.actualChapter}, not Chapter ${n}.`);
+      return;
+    }
     gate.upload(n, uploadText);
     closeUpload();
   };
@@ -409,7 +433,8 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
             <p className="chapter-upload-blurb">
               Uploading a chapter is the only way to open the archive. Its text is read for the
               entries and names it puts on the page — those are revealed, and everything the story
-              hasn’t reached yet stays locked.
+              hasn’t reached yet stays locked. The whole chapter is checked against the book text,
+              so a heading or a partial paste won’t unlock anything.
             </p>
 
             <div className="chapter-upload-row">

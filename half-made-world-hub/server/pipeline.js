@@ -14,6 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const { generateSeeds } = require('./seed-generator');
+const { buildChapterChecks } = require('./chapter-checks');
 
 const SERVER_DIR = __dirname;
 const APP_DIR = path.resolve(SERVER_DIR, '..');
@@ -57,6 +58,7 @@ function syncAll() {
   const rels = readJson(path.join(DATA_DIR, 'relationships.json'));
   const links = readJson(path.join(DATA_DIR, 'story-links.json'));
   const chapterCodes = readJsonOptional(path.join(DATA_DIR, 'chapter-codes.json'), {});
+  const chapterChecks = buildChapterChecks();
 
   const generated = generateSeeds({ world: entries, links, rels });
   const changed = [];
@@ -64,7 +66,7 @@ function syncAll() {
     if (writeIfChanged(t.file, generated[t.key])) changed.push(path.basename(t.file));
   }
 
-  const snapshot = { entries, relationships: rels, storyLinks: links, chapterCodes };
+  const snapshot = { entries, relationships: rels, storyLinks: links, chapterCodes, chapterChecks };
   if (writeIfChanged(SNAPSHOT_FILE, JSON.stringify(snapshot, null, 2))) changed.push('snapshot.json');
 
   return changed;

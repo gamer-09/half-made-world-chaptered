@@ -2,6 +2,10 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { buildChapterChecks } = require('../server/chapter-checks.js');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -27,6 +31,9 @@ try {
 } catch {
   snapshot.chapterCodes = {};
 }
+
+// Fingerprints let the gate verify a full chapter without shipping its prose.
+snapshot.chapterChecks = buildChapterChecks();
 
 await writeFile(
   resolve(clientPublicDir, 'snapshot.json'),
