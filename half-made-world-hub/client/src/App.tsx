@@ -89,11 +89,25 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(import.meta.env.BASE_URL + 'snapshot.json');
-        if (!res.ok) return;
-        const data = await res.json();
+        let entries: any[] | null = null;
+        // Prefer the live app data when the server is available.
+        try {
+          const r = await fetch('/api/entries', { cache: 'no-store' });
+          if (r.ok) {
+            const d = await r.json();
+            if (Array.isArray(d) && d.length) entries = d;
+          }
+        } catch {
+          /* fall through to snapshot */
+        }
+        if (!entries) {
+          const res = await fetch(import.meta.env.BASE_URL + 'snapshot.json');
+          if (!res.ok) return;
+          const data = await res.json();
+          entries = data.entries || [];
+        }
         const nameSet = new Set(
-          (data.entries || []).map((e: any) => String(e.name || '').toLowerCase()),
+          (entries || []).map((e: any) => String(e.name || '').toLowerCase()),
         );
         const stop = new Set([
           'a', 'an', 'and', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by',
