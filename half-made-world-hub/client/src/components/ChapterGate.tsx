@@ -34,6 +34,46 @@ async function extractLegacyDocText(file: File): Promise<string> {
 }
 
 /** Extract readable text from a chapter file, including PDF and Word documents. */
+function reflowText(text: string): string {
+  const lines = text.split('\n');
+  const blocks: string[] = [];
+  let current: string[] = [];
+  const flush = () => {
+    if (current.length) {
+      blocks.push(current.join(' ').replace(/  +/g, ' ').trim());
+      current = [];
+    }
+  };
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (line.trim() === '') {
+      flush();
+      blocks.push('');
+      continue;
+    }
+    if (/^\s*(?:[-*•]|\d+\.|#{1,6}\s)/.test(line)) {
+      flush();
+      blocks.push(line.trim());
+      continue;
+    }
+    current.push(line.trim());
+  }
+  flush();
+  const out: string[] = [];
+  let blank = false;
+  for (const b of blocks) {
+    if (b === '') {
+      if (blank) continue;
+      blank = true;
+      out.push('');
+    } else {
+      blank = false;
+      out.push(b);
+    }
+  }
+  return out.join('\n').trim();
+}
+
 export async function extractTextFromFile(file: File): Promise<string> {
   const name = (file.name || '').toLowerCase();
   const type = (file.type || '').toLowerCase();
@@ -142,6 +182,7 @@ function chapterTitle(n: number): string {
 
 export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: ChapterGateProps) {
   const [uploadText, setUploadText] = useState('');
+  const [displayUploadText, setDisplayUploadText] = useState('');
   const [uploadNumber, setUploadNumber] = useState<string>('');
   const [uploadNote, setUploadNote] = useState('');
   const [isParsing, setIsParsing] = useState(false);
@@ -161,6 +202,7 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
     try {
       const text = await extractTextFromFile(file);
       setUploadText(text);
+      setDisplayUploadText(reflowText(text));
       const n = parseChapterNumber(file.name) ?? parseChapterNumber(text);
       setUploadNumber(n === null ? '' : String(n));
       setUploadNote(
@@ -171,6 +213,7 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
       setUploadError(false);
     } catch (err) {
       setUploadText('');
+      setDisplayUploadText('');
       setUploadNote(err instanceof Error ? err.message : 'Could not read that file.');
       setUploadError(true);
     } finally {
@@ -181,6 +224,7 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   const closeUpload = () => {
     onUploadOpenChange(false);
     setUploadText('');
+    setDisplayUploadText('');
     setUploadNumber('');
     setUploadNote('');
     setIsParsing(false);
@@ -299,9 +343,10 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
             <textarea
               className="chapter-upload-text"
               placeholder="…or paste the chapter text here."
-              value={uploadText}
+              value={displayUploadText}
               disabled={isParsing}
               onChange={(e) => {
+                setDisplayUploadText(e.target.value);
                 setUploadText(e.target.value);
                 if (uploadNumber.trim() === '') {
                   const n = parseChapterNumber(e.target.value);
