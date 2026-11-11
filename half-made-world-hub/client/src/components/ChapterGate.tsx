@@ -38,19 +38,21 @@ export async function extractTextFromFile(file: File): Promise<string> {
   const name = (file.name || '').toLowerCase();
   const type = (file.type || '').toLowerCase();
 
+  let text: string;
   if (name.endsWith('.pdf') || type === 'application/pdf') {
-    return extractPdfText(file);
-  }
-  if (
+    text = await extractPdfText(file);
+  } else if (
     name.endsWith('.docx') ||
     type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ) {
-    return extractDocxText(file);
+    text = await extractDocxText(file);
+  } else if (name.endsWith('.doc') || type === 'application/msword') {
+    text = await extractLegacyDocText(file);
+  } else {
+    text = await file.text();
   }
-  if (name.endsWith('.doc') || type === 'application/msword') {
-    return extractLegacyDocText(file);
-  }
-  return file.text();
+  // Keep the file's original line breaks consistent across every format.
+  return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 }
 
 async function extractPdfText(file: File): Promise<string> {
