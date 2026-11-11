@@ -260,6 +260,11 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   const [registerDenied, setRegisterDenied] = useState(false);
   const [registerBusy, setRegisterBusy] = useState(false);
   const [registerResult, setRegisterResult] = useState<{ code: string; chapter: number } | null>(null);
+  // Which registered code is being edited, which one is waiting on a delete
+  // confirmation, and which one has a request in flight.
+  const [editingCode, setEditingCode] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [listBusy, setListBusy] = useState<string | null>(null);
   const [redeemCode, setRedeemCode] = useState('');
   const [redeemError, setRedeemError] = useState('');
   const [redeemShaking, setRedeemShaking] = useState(false);
@@ -335,6 +340,9 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
     setRegisterDenied(false);
     setRegisterBusy(false);
     setRegisterResult(null);
+    setEditingCode(null);
+    setPendingDelete(null);
+    setListBusy(null);
   };
 
   const failRegister = (message: string, field: 'code' | 'chapter' | null = null) => {
@@ -349,6 +357,24 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
     }
   };
 
+  const resetRegisterForm = () => {
+    setRegisterCode('');
+    setRegisterChapter('');
+    setRegisterError('');
+    setRegisterErrorField(null);
+    setEditingCode(null);
+  };
+
+  const startEditCode = (code: string, chapter: number) => {
+    setEditingCode(code);
+    setRegisterCode(code);
+    setRegisterChapter(String(chapter));
+    setRegisterError('');
+    setRegisterErrorField(null);
+    setPendingDelete(null);
+  };
+
+  // Register a new code, or save the one currently being edited.
   const registerCodeFn = async () => {
     if (registerBusy) return;
     const code = registerCode.trim();
@@ -365,28 +391,69 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
       failRegister('Registration is only available when running locally.');
       return;
     }
+    const editing = editingCode;
     setRegisterBusy(true);
     try {
-      const res = await fetch('/api/chapter-codes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, chapter: ch }),
-      });
+      const res = await fetch(
+        editing
+          ? `/api/chapter-codes/${encodeURIComponent(editing)}`
+          : '/api/chapter-codes',
+        {
+          method: editing ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, chapter: ch }),
+        },
+      );
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         failRegister(data?.error || 'Could not register that code.');
         return;
       }
-      setCodes((prev) => ({ ...prev, [code.toLowerCase()]: ch }));
-      setRegisterCode('');
-      setRegisterChapter('');
-      setRegisterError('');
-      setRegisterErrorField(null);
-      setRegisterResult({ code, chapter: ch });
+      setCodes((prev) => {
+        const next = { ...prev };
+        if (editing) delete next[editing.toLowerCase()];
+        next[code.toLowerCase()] = ch;
+        return next;
+      });
+      if (editing) {
+        // Editing is a bookkeeping change, not a reveal — stay in the list so
+        // the author can keep tidying codes instead of being thrown out.
+        resetRegisterForm();
+      } else {
+        resetRegisterForm();
+        setRegisterResult({ code, chapter: ch });
+      }
     } catch {
       failRegister('Could not reach the server to register that code.');
     } finally {
       setRegisterBusy(false);
+    }
+  };
+
+  const removeCode = async (code: string) => {
+    if (listBusy) return;
+    setListBusy(code);
+    setRegisterError('');
+    try {
+      const res = await fetch(`/api/chapter-codes/${encodeURIComponent(code)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        failRegister(data?.error || 'Could not delete that code.');
+        return;
+      }
+      setCodes((prev) => {
+        const next = { ...prev };
+        delete next[code];
+        return next;
+      });
+      setPendingDelete(null);
+      if (editingCode === code) resetRegisterForm();
+    } catch {
+      failRegister('Could not reach the server to delete that code.');
+    } finally {
+      setListBusy(null);
     }
   };
 
@@ -644,6 +711,10 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
                 <p className="chapter-upload-blurb">
                   Enter a chapter code to unlock the chapter tier and its manifest-gated entries.
                 </p>
+                <p className="chapter-redeem-hint">
+                  <i className="fa-solid fa-bookmark" aria-hidden="true" />
+                  You'll find the code at the end of every chapter.
+                </p>
                 <div
                   className={`chapter-code-field${redeemError ? ' is-error' : ''}${
                     redeemShaking ? ' shake' : ''
@@ -725,9 +796,13 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
               </div>
             ) : (
               <>
-                <h2 className="chapter-upload-title">Register a chapter code</h2>
+                <h2 className="chapter-upload-title">
+                  {editingCode ? 'Edit chapter code' : 'Register a chapter code'}
+                </h2>
                 <p className="chapter-upload-blurb">
-                  Create a code that unlocks a chapter for readers who can't get the chapter text.
+                  {editingCode
+                    ? 'Change the code or the chapter it unlocks.'
+                    : "Create a code that unlocks a chapter for readers who can't get the chapter text."}
                 </p>
                 <div
                   className={`chapter-register-fields${registerDenied ? ' deny' : ''}`}
@@ -785,8 +860,12 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
                   </p>
                 )}
                 <div className="chapter-upload-actions">
-                  <button className="btn btn-ghost" onClick={closeRegister} disabled={registerBusy}>
-                    Close
+                  <button
+                    className="btn btn-ghost"
+                    onClick={editingCode ? resetRegisterForm : closeRegister}
+                    disabled={registerBusy}
+                  >
+                    {editingCode ? 'Cancel edit' : 'Close'}
                   </button>
                   <button
                     className={`btn btn-primary${registerBusy ? ' is-forging' : ''}`}
@@ -795,7 +874,11 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
                   >
                     {registerBusy ? (
                       <>
-                        <i className="fa-solid fa-hammer" aria-hidden="true" /> Forging…
+                        <i className="fa-solid fa-hammer" aria-hidden="true" /> Saving…
+                      </>
+                    ) : editingCode ? (
+                      <>
+                        <i className="fa-solid fa-check" aria-hidden="true" /> Save changes
                       </>
                     ) : (
                       <>
@@ -804,6 +887,74 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
                     )}
                   </button>
                 </div>
+
+                {Object.keys(codes).length > 0 && (
+                  <div className="chapter-code-list">
+                    <p className="chapter-code-list-head">
+                      Registered codes
+                      <span className="chapter-code-list-count">{Object.keys(codes).length}</span>
+                    </p>
+                    <ul className="chapter-code-rows">
+                      {Object.entries(codes)
+                        .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
+                        .map(([code, chapter]) => (
+                          <li className="chapter-code-row" key={code}>
+                            {pendingDelete === code ? (
+                              <>
+                                <span className="chapter-code-row-prompt">Delete this code?</span>
+                                <span className="chapter-code-row-actions">
+                                  <button
+                                    type="button"
+                                    className="btn btn-danger btn-sm"
+                                    onClick={() => removeCode(code)}
+                                    disabled={listBusy === code}
+                                  >
+                                    {listBusy === code ? 'Deleting…' : 'Delete'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost btn-sm"
+                                    onClick={() => setPendingDelete(null)}
+                                    disabled={listBusy === code}
+                                  >
+                                    Cancel
+                                  </button>
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <code className="chapter-code-row-code">{code}</code>
+                                <span className="chapter-code-row-arrow" aria-hidden="true">
+                                  →
+                                </span>
+                                <span className="chapter-code-row-chapter">Chapter {chapter}</span>
+                                <span className="chapter-code-row-actions">
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost btn-sm"
+                                    aria-label={`Edit ${code}`}
+                                    title="Edit this code"
+                                    onClick={() => startEditCode(code, chapter)}
+                                  >
+                                    <i className="fa-solid fa-pen" aria-hidden="true" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost btn-sm chapter-code-row-delete"
+                                    aria-label={`Delete ${code}`}
+                                    title="Delete this code"
+                                    onClick={() => setPendingDelete(code)}
+                                  >
+                                    <i className="fa-solid fa-trash" aria-hidden="true" />
+                                  </button>
+                                </span>
+                              </>
+                            )}
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
               </>
             )}
           </div>

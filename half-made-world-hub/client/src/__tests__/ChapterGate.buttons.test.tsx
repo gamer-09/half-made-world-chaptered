@@ -141,6 +141,14 @@ describe('ChapterGate action buttons', () => {
     expect(gate.upload).not.toHaveBeenCalled();
   });
 
+  it('tells readers where to find a chapter code', () => {
+    render(<ChapterGate gate={makeGate()} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Redeem code/i }));
+
+    expect(screen.getByText(/at the end of every chapter/i)).toBeTruthy();
+  });
+
   it('opens the register page and thuds when fields are missing', () => {
     render(<ChapterGate gate={makeGate()} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
 
@@ -181,5 +189,74 @@ describe('ChapterGate action buttons', () => {
     expect(screen.getByText('CH4-SECRET')).toBeTruthy();
     expect(document.querySelectorAll('.chapter-forge-spark').length).toBe(10);
     expect(document.querySelector('.chapter-forge-key')).toBeTruthy();
+  });
+
+  it('edits a registered code in place', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/api/chapter-codes')) {
+        return {
+          ok: true,
+          json: async () => (init?.method === 'PUT' ? { ok: true } : { 'ch1-aaa': 1 }),
+        } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({ chapterCodes: { 'ch1-aaa': 1 }, chapterChecks: {} }),
+      } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ChapterGate gate={makeGate()} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Register code/i }));
+    fireEvent.click(await screen.findByLabelText('Edit ch1-aaa'));
+
+    expect(screen.getByRole('heading', { name: /Edit chapter code/i })).toBeTruthy();
+    expect((screen.getByLabelText(/^Code$/i) as HTMLInputElement).value).toBe('ch1-aaa');
+
+    fireEvent.change(screen.getByLabelText('Chapter'), { target: { value: '7' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save changes/i }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/chapter-codes/ch1-aaa'),
+        expect.objectContaining({ method: 'PUT' }),
+      ),
+    );
+    await waitFor(() => expect(screen.getByText('Chapter 7')).toBeTruthy());
+  });
+
+  it('deletes a registered code after confirming', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/api/chapter-codes')) {
+        return {
+          ok: true,
+          json: async () => (init?.method === 'DELETE' ? { ok: true } : { 'ch1-aaa': 1 }),
+        } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({ chapterCodes: { 'ch1-aaa': 1 }, chapterChecks: {} }),
+      } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ChapterGate gate={makeGate()} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Register code/i }));
+    fireEvent.click(await screen.findByLabelText('Delete ch1-aaa'));
+
+    expect(screen.getByText(/Delete this code\?/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Delete$/i }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/chapter-codes/ch1-aaa'),
+        expect.objectContaining({ method: 'DELETE' }),
+      ),
+    );
+    await waitFor(() => expect(screen.queryByText('ch1-aaa')).toBeNull());
   });
 });

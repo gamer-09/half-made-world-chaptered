@@ -2,7 +2,7 @@ import type { Ref } from 'react';
 import type { CategoryInfo } from '../types';
 import { categoryColor } from '../theme';
 
-export type ViewMode = 'browse' | 'map' | 'web' | 'blocks' | 'chat' | 'planning' | 'canon' | 'weave' | 'flavor';
+export type ViewMode = 'browse' | 'map' | 'web' | 'blocks' | 'chat';
 
 interface SidebarProps {
   categories: CategoryInfo[];
@@ -18,11 +18,6 @@ interface SidebarProps {
   onOpenWeb: () => void;
   onOpenBlocks: () => void;
   onOpenChat: () => void;
-  // Local-dev only: omitted (and the button hidden) in the view-only build.
-  onOpenPlanning?: () => void;
-  onOpenCanon?: () => void;
-  onOpenWeave?: () => void;
-  onOpenFlavor?: () => void;
 }
 
 export function Sidebar({
@@ -39,10 +34,6 @@ export function Sidebar({
   onOpenWeb,
   onOpenBlocks,
   onOpenChat,
-  onOpenPlanning,
-  onOpenCanon,
-  onOpenWeave,
-  onOpenFlavor,
 }: SidebarProps) {
   return (
     <aside className="sidebar">
@@ -112,54 +103,6 @@ export function Sidebar({
         <i className="fa-solid fa-message" style={{ fontSize: 14, color: view === 'chat' ? '#c8a876' : 'currentColor' }} />
         Query Chat
       </button>
-
-      {onOpenPlanning && (
-        <button
-          className={`nav-map-btn${view === 'planning' ? ' active' : ''}`}
-          onClick={onOpenPlanning}
-          title="Local only — plan new characters, places, races, and sections with the AI"
-        >
-          <i className="fa-solid fa-compass-drafting" style={{ fontSize: 14, color: view === 'planning' ? '#c8a876' : 'currentColor' }} />
-          Planning
-          <span className="nav-dev-tag">dev</span>
-        </button>
-      )}
-
-      {onOpenCanon && (
-        <button
-          className={`nav-map-btn${view === 'canon' ? ' active' : ''}`}
-          onClick={onOpenCanon}
-          title="Local only — audit the archive for contradictions, broken links, gaps and drift"
-        >
-          <i className="fa-solid fa-shield-halved" style={{ fontSize: 14, color: view === 'canon' ? '#c8a876' : 'currentColor' }} />
-          Canon Guard
-          <span className="nav-dev-tag">dev</span>
-        </button>
-      )}
-
-      {onOpenWeave && (
-        <button
-          className={`nav-map-btn${view === 'weave' ? ' active' : ''}`}
-          onClick={onOpenWeave}
-          title="Local only — explore the timeline, the constellation, and the Lore Oracle"
-        >
-          <i className="fa-solid fa-wand-sparkles" style={{ fontSize: 14, color: view === 'weave' ? '#c8a876' : 'currentColor' }} />
-          Weave
-          <span className="nav-dev-tag">dev</span>
-        </button>
-      )}
-
-      {onOpenFlavor && (
-        <button
-          className={`nav-map-btn${view === 'flavor' ? ' active' : ''}`}
-          onClick={onOpenFlavor}
-          title="Local only — get flavor words for an action, or enrich a scene with more life"
-        >
-          <i className="fa-solid fa-feather-pointed" style={{ fontSize: 14, color: view === 'flavor' ? '#c8a876' : 'currentColor' }} />
-          Flavor Finder
-          <span className="nav-dev-tag">dev</span>
-        </button>
-      )}
 
       <label className="search-wrap">
         <span className="search-icon" aria-hidden="true">

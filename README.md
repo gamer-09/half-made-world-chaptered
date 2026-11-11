@@ -54,7 +54,6 @@ and saved through the UI itself.
 | `/` | Focus the search box |
 | `n` | Add an entry (author mode / local dev only — otherwise a "locked" toast) |
 | `1` – `5` | Browse · Relationship Map · Story Web · Block Map · Query Chat |
-| `6` – `9` | Planning · Canon Guard · Weave · Flavor Finder (author mode / local dev only) |
 
 ## The chapter gate
 
@@ -81,7 +80,7 @@ chapters you've unlocked actually put on the page.
   remembered in `localStorage`.
 
 While the gate is on, the hub is **read-only** even in local dev: the gate is the reader's mode,
-so add/edit/delete and the planning tools only appear once you switch to author mode.
+so add/edit/delete only appear once you switch to author mode.
 
 ## Interface notes
 
@@ -151,95 +150,14 @@ Groq-backed: it sends the whole archive to the server's `/api/ai/explore` route 
 the answer itself. Explore **always uses the HTTP (Groq) backend** and requires `AI_API_KEY` (or
 `GROQ_API_KEY`) in the server environment; without a key, explore falls back to the local lookup.
 
-## Canon Guard (local dev only)
+## AI backend
 
-A **Canon Guard** view audits the archive for internal consistency and reports what it finds.
-It is **report-only** — it never writes to the archive. The rules it runs:
+Explore mode in Query Chat always uses the **HTTP backend**, by default Groq. Set `AI_API_KEY` (or
+`GROQ_API_KEY`) to enable it. `AI_BASE_URL` / `AI_MODEL` point at any OpenAI-compatible
+chat-completions endpoint (Groq is the default; OpenRouter and local Ollama/LM Studio all work), and
+`AI_FALLBACK_MODELS` tries additional models in order when a free model is rate-limited.
 
-| Rule | What it catches |
-| --- | --- |
-| `CONTRADICTION` | Conflicting "first / only" claims about a unique thing |
-| `BROKEN-REF` | Story-link or relationship endpoints that resolve to no entry |
-| `DUPLICATE` | Two entries sharing a name |
-| `DRIFT` | Near-identical entry names (typo / casing / spacing variants) |
-| `GAP` | Truncated or empty descriptions |
-| `META` | Meta-commentary or placeholder language in canon text |
-| `ORPHAN` | An entry with no story link in either direction |
-| `SUGGESTED-LINK` | An entry named in the text that has an entry of its own but no link to it |
-
-Findings can be acknowledged so a re-run keeps them dismissed, and each finding links straight to
-the entry it concerns. Passing a `draft` entry to `/api/canon/lint` scopes the audit to that
-entry's neighbourhood instead of the whole archive.
-
-## Weave (local dev only)
-
-**Weave** is a playful way through the archive with three panels:
-
-- **Timeline Explorer** — the world's eras (the Age of the Aelthar, the Sundering, the First and
-  Second Turnings, the Academy Era, and the rest), each with the events that define it.
-- **Constellation** — the archive as a 2D graph; nodes are entries, sized by how well connected
-  they are, with story links solid and relationships dashed. Switch between the current era and
-  the whole archive.
-- **Lore Oracle** — draws a random entry from the era and opens it.
-
-## Flavor Finder (local dev only)
-
-**Flavor Finder** is a small writing tool with four modes, all pure AI — no archive data is sent
-and nothing is written:
-
-- **Descriptors** — a word, phrase, or action in, evocative one- or two-word descriptors out.
-- **Enrich a scene** — paste a scene, get the same scene rewritten with more life.
-- **Scene craft** — ask how to handle a transition, a time jump, or a POV change.
-- **Sounds** — a sound source in, the sound words for it out ("boom", "thud").
-
-It reuses the same HTTP backend as Query Chat's explore mode, so it needs `AI_API_KEY` (or
-`GROQ_API_KEY`).
-
-## Planning Room (AI, local dev only)
-
-A **Planning Room** view drafts *new* entries — characters, places, races, monsters, factions,
-items, even whole new categories — that fit the world already written. It reads the whole archive
-(its structure, field conventions, and every existing entry) so new material matches the archive's
-tone and canon.
-
-The flow is questions-first: the planner asks the open creative decisions it needs (motive, tone,
-name, scope, which existing entries it ties to), then writes a full draft once you answer — or
-draft it its own way. Drafts are **never saved**: they are ephemeral proposals shown only in the
-local dev UI, and where a detail is your call rather than something the archive answers, the
-planner asks instead of inventing it.
-
-Planning is **gated to local development** (`import.meta.env.DEV`): the nav button, shortcut `6`,
-and the view itself are absent from the deployed read-only build.
-
-> **The planner is currently switched off.** `AI_PLANNER_ENABLED` defaults to `false`, because the
-> opencode run over the whole archive is not dependable yet — it can run for minutes and then answer
-> with prose instead of the requested JSON. The view is still there and shows a "switched off"
-> panel. Set `AI_PLANNER_ENABLED=true` in `.env` to bring it back; the implementation is
-> untouched.
-
-### Choosing the AI backend
-
-The AI features use **two separate backends**, and each is wired to a fixed one:
-
-- **Explore (Query Chat) and Flavor Finder** — always the **HTTP backend**, by default Groq. Set
-  `AI_API_KEY` (or `GROQ_API_KEY`) to enable it. `AI_BASE_URL` / `AI_MODEL` point at any
-  OpenAI-compatible chat-completions endpoint (Groq is the default; OpenRouter and local
-  Ollama/LM Studio all work), and `AI_FALLBACK_MODELS` tries additional models in order when a
-  free model is rate-limited. These never use the opencode CLI.
-- **Planning Room** — always the **local `opencode` CLI** (set nothing beyond having opencode
-  installed; `opencode run --format json` drives it). It uses whatever model/auth opencode is
-  configured with, so no API key is needed. `OPENCODE_MODEL` pins a model, `OPENCODE_BIN`
-  overrides the binary path, `OPENCODE_AGENT` picks the agent (default `plan`), and
-  `OPENCODE_TIMEOUT_MS` caps one CLI call. The planner does **not** fall back to HTTP — if the
-  opencode CLI fails, the plan request fails.
-
-`AI_PROVIDER` is no longer needed to switch between them: explore is always HTTP and the planner is
-always opencode. The only relevant knobs are the keys above and the optional opencode overrides.
-
-The full-archive digest the planner reads is bounded by `AI_FULL_CONTEXT_BUDGET` (default
-`150000` characters; set `0` to fall back to keyword matches only).
-
-Two optional toggles apply to the HTTP backend only: `AI_REASONING=true` sends `reasoning_effort`
+Two optional toggles apply to the HTTP backend: `AI_REASONING=true` sends `reasoning_effort`
 (Groq and gpt-oss models only), and `AI_JSON_MODE=false` disables JSON response mode. See
 `.env.example` for the full list.
 
@@ -305,8 +223,8 @@ Same CRUD shape as relationships, under `/api/story-links`.
 ## Tests and CI
 
 The client has a Vitest suite (`npm test --prefix client`) covering the search index, the
-description renderer and markdown tables, the canon rules, the Flavor Finder, the Weave eras, and
-the chapter gate (entry/field reveal, auto-scan, and link pruning).
+description renderer and markdown tables, the canon rules, and the chapter gate (entry/field
+reveal, auto-scan, and link pruning).
 
 Every push to `main` runs the GitHub Actions workflow in `.github/workflows/deploy-ghpages.yml`:
 it installs the client dependencies, runs the unit tests, checks that the seed files still match

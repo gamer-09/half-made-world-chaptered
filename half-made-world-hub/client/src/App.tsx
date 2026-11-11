@@ -11,7 +11,6 @@ import type {
 } from './types';
 import { Sidebar, type ViewMode } from './components/Sidebar';
 import { QueryChatRoom } from './components/QueryChatRoom';
-import { PlanningRoom } from './components/PlanningRoom';
 import { BackdropMotion } from './components/BackdropMotion';
 import { LofiPlayer } from './components/LofiPlayer';
 import { SoundToggle } from './components/SoundToggle';
@@ -24,10 +23,6 @@ import { EntryForm } from './components/EntryForm';
 import { RelationshipMap } from './components/RelationshipMap';
 import { StoryWeb } from './components/StoryWeb';
 import { BlockMap } from './components/BlockMap';
-import { CanonGuard } from './components/CanonGuard';
-import { WeaveExplorer } from './components/WeaveExplorer';
-import { FlavorFinder } from './components/FlavorFinder';
-import { ErrorBoundary } from './components/ErrorBoundary';
 import { LinkForm } from './components/LinkForm';
 import { Modal } from './components/Modal';
 import { ChapterGate } from './components/ChapterGate';
@@ -239,7 +234,7 @@ export default function App() {
     if (fresh && fresh !== selected) setSelected(fresh);
   }, [entries, selected]);
 
-  // Keyboard shortcuts: / focuses search, n adds an entry, 1/2/3/4 switch views.
+  // Keyboard shortcuts: / focuses search, n adds an entry, 1-5 switch views.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -268,14 +263,6 @@ export default function App() {
         setView('blocks');
       } else if (e.key === '5') {
         setView('chat');
-      } else if (e.key === '6' && canEdit) {
-        setView('planning');
-      } else if (e.key === '7' && canEdit) {
-        setView('canon');
-      } else if (e.key === '8' && canEdit) {
-        setView('weave');
-      } else if (e.key === '9' && canEdit) {
-        setView('flavor');
       }
     };
     window.addEventListener('keydown', onKey);
@@ -612,29 +599,17 @@ export default function App() {
   const isMapView = view === 'map';
   const isWebView = view === 'web';
   const isBlocksView = view === 'blocks';
-  const isPlanningView = view === 'planning' && canEdit;
-  const isCanonView = view === 'canon' && canEdit;
-  const isWeaveView = view === 'weave' && canEdit;
-  const isFlavorView = view === 'flavor' && canEdit;
   const showDashboard = view === 'browse' && activeCategory === 'All' && search.trim() === '' && !activeTag;
 
-  const viewKey = isFlavorView
-    ? 'flavor'
-    : isWeaveView
-    ? 'weave'
-    : isCanonView
-    ? 'canon'
-    : isPlanningView
-    ? 'planning'
-    : isChatView
-      ? 'chat'
-      : isBlocksView
-        ? 'blocks'
-        : isWebView
-          ? 'web'
-          : isMapView
-            ? 'map'
-            : `browse-${activeCategory}`;
+  const viewKey = isChatView
+    ? 'chat'
+    : isBlocksView
+      ? 'blocks'
+      : isWebView
+        ? 'web'
+        : isMapView
+          ? 'map'
+          : `browse-${activeCategory}`;
 
   return (
     <div className="app">
@@ -654,34 +629,22 @@ export default function App() {
         onOpenWeb={() => setView('web')}
         onOpenBlocks={() => setView('blocks')}
         onOpenChat={() => setView('chat')}
-        onOpenPlanning={canEdit ? () => setView('planning') : undefined}
-        onOpenCanon={canEdit ? () => setView('canon') : undefined}
-        onOpenWeave={canEdit ? () => setView('weave') : undefined}
-        onOpenFlavor={canEdit ? () => setView('flavor') : undefined}
       />
 
       <main className="main">
         <header className="main-header">
           <div className="main-header-text">
             <h2 className="main-title">
-              {isFlavorView
-                ? 'Flavor Finder'
-                : isWeaveView
-                ? 'Weave'
-                : isCanonView
-                ? 'Canon Guard'
-                : isPlanningView
-                ? 'Planning'
-                : isBlocksView
-                  ? 'Block Chain Map'
-                  : isWebView
-                    ? 'Story Web'
-                    : isMapView
-                      ? 'Relationship Map'
-                      : activeCategory === 'All'
-                        ? 'All Entries'
-                        : activeCategory}
-              {!isMapView && !isWebView && !isBlocksView && !isPlanningView && !isCanonView && !isWeaveView && !isFlavorView && (
+              {isBlocksView
+                ? 'Block Chain Map'
+                : isWebView
+                  ? 'Story Web'
+                  : isMapView
+                    ? 'Relationship Map'
+                    : activeCategory === 'All'
+                      ? 'All Entries'
+                      : activeCategory}
+              {!isMapView && !isWebView && !isBlocksView && (
                 <span className="main-count">{filtered.length}</span>
               )}
               {!canEdit && !isMapView && !isWebView && !isBlocksView && (
@@ -689,30 +652,22 @@ export default function App() {
               )}
             </h2>
             <p className="main-sub">
-              {isFlavorView
-                ? 'Get one- or two-word flavor descriptors, or rewrite a scene with more life'
-                : isWeaveView
-                ? 'Timeline, constellation, and the Lore Oracle — a playful way through the archive'
-                : isCanonView
-                ? 'Report-only consistency check — contradictions, broken links, gaps, drift, and more'
-                : isPlanningView
-                ? 'Draft new characters, places, and sections with the AI — nothing is saved to the archive'
-                : isBlocksView
-                  ? 'The world’s geography as a chain — every place linked to what contains it'
-                  : isWebView
-                    ? 'The whole world at a glance — every realm, monster, artifact, and thread'
-                    : isMapView
-                      ? 'Who knows whom — and who betrayed whom'
-                      : activeCategory === 'All'
-                        ? 'Everything in the archive'
-                        : `Entries in ${activeCategory}`}
-              {!isMapView && !isWebView && !isBlocksView && !isPlanningView && !isCanonView && !isWeaveView && !isFlavorView && search.trim() && ` · matching “${search.trim()}”`}
+              {isBlocksView
+                ? 'The world’s geography as a chain — every place linked to what contains it'
+                : isWebView
+                  ? 'The whole world at a glance — every realm, monster, artifact, and thread'
+                  : isMapView
+                    ? 'Who knows whom — and who betrayed whom'
+                    : activeCategory === 'All'
+                      ? 'Everything in the archive'
+                      : `Entries in ${activeCategory}`}
+              {!isMapView && !isWebView && !isBlocksView && search.trim() && ` · matching “${search.trim()}”`}
             </p>
           </div>
           <div className="header-actions">
             <SoundToggle />
             <LofiPlayer />
-            {!isMapView && !isWebView && !isBlocksView && !isPlanningView && !isCanonView && activeCategory !== 'All' && canEdit && (
+            {!isMapView && !isWebView && !isBlocksView && activeCategory !== 'All' && canEdit && (
               <button
                 className="btn btn-danger btn-sm"
                 onClick={() => handleDeleteCategory(activeCategory)}
@@ -767,7 +722,7 @@ export default function App() {
           </div>
         )}
 
-        <div className={`view-transition${isBlocksView || isPlanningView || isCanonView || isWeaveView || isFlavorView ? ' view-fill' : ''}`} key={viewKey}>
+        <div className={`view-transition${isBlocksView ? ' view-fill' : ''}`} key={viewKey}>
         {loading ? (
           <div className="loading">
             <span className="loading-orb" aria-hidden="true" />
@@ -793,21 +748,6 @@ export default function App() {
               <i className="fa-solid fa-file-arrow-up" /> Upload a chapter
             </button>
           </div>
-        ) : isFlavorView ? (
-          <ErrorBoundary label="Flavor Finder">
-            <FlavorFinder />
-          </ErrorBoundary>
-        ) : isWeaveView ? (
-          <WeaveExplorer
-            entries={entries}
-            relationships={relationships}
-            storyLinks={storyLinks}
-            onOpenEntry={openEntryByName}
-          />
-        ) : isCanonView ? (
-          <CanonGuard onOpenEntry={openEntryByName} />
-        ) : isPlanningView ? (
-          <PlanningRoom onOpenEntry={openEntryByName} />
         ) : isBlocksView ? (
           <BlockMap entries={entries} storyLinks={storyLinks} onNodeClick={setSelected} />
         ) : isWebView ? (
