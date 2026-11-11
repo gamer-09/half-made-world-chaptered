@@ -220,7 +220,7 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
         /* fall through to the snapshot */
       }
       try {
-        const res = await fetch(import.meta.env.BASE_URL + 'snapshot.json');
+        const res = await fetch(import.meta.env.BASE_URL + 'snapshot.json', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (!cancelled) {
