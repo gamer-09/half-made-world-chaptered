@@ -121,7 +121,9 @@ export default function App() {
           'whom', 'why', 'will', 'with', 'would', 'you', 'your', 'yours', 'chapter',
         ]);
         const found = new Set<string>();
-        const re = /\b([A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)+)\b/g;
+        // Only treat words on the SAME line as a single name — never combine
+        // across a line break, so "Word\nNext" is not read as "Word Next".
+        const re = /\b([A-Z][a-zA-Z]*(?:[ \t]+[A-Z][a-zA-Z]*)+)\b/g;
         let m: RegExpExecArray | null;
         while ((m = re.exec(texts)) !== null) {
           const candidate = m[1].trim();
