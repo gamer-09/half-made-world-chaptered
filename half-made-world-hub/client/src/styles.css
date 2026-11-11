@@ -3309,6 +3309,49 @@ select.input {
 .chapter-upload-note--error i,
 .chapter-upload-note--loading i { font-size: 11px; }
 .chapter-upload-actions { display: flex; justify-content: flex-end; gap: 9px; }
+/* ============ Redeem field / error feedback ============ */
+.chapter-code-field { position: relative; }
+
+.chapter-code-field.is-error .chapter-upload-num { color: var(--danger); }
+
+.chapter-code-field.is-error input {
+  border-color: var(--danger);
+  caret-color: var(--danger);
+  box-shadow:
+    0 0 0 1px rgba(194, 94, 74, 0.35),
+    0 0 18px rgba(194, 94, 74, 0.18);
+}
+
+.chapter-code-field.shake {
+  animation: redeemShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes redeemShake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
+.chapter-redeem-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger);
+  animation: redeemErrorIn 0.3s var(--ease-out) both;
+}
+
+.chapter-redeem-error i { font-size: 11px; }
+
+@keyframes redeemErrorIn {
+  0% { opacity: 0; transform: translateY(-4px); }
+  60% { transform: translateY(1px); }
+  100% { opacity: 1; transform: none; }
+}
+
 /* ============ Chapter unlock ceremony ============
    Seal-break sequence: two counter-rotating rune rings, a brass seal that
    springs in, a shockwave, a twelve-spark burst, then the chapter title and
@@ -3538,6 +3581,10 @@ select.input {
   .chapter-unlock-shock,
   .chapter-unlock-spark {
     display: none;
+  }
+  .chapter-code-field.shake,
+  .chapter-redeem-error {
+    animation: none;
   }
 }
 

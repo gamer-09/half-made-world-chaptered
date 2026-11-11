@@ -243,7 +243,8 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   const [registerChapter, setRegisterChapter] = useState('');
   const [registerNote, setRegisterNote] = useState('');
   const [redeemCode, setRedeemCode] = useState('');
-  const [redeemNote, setRedeemNote] = useState('');
+  const [redeemError, setRedeemError] = useState('');
+  const [redeemShaking, setRedeemShaking] = useState(false);
   const [redeemResult, setRedeemResult] = useState<{ chapter: number; title: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -258,24 +259,39 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   const closeRedeem = () => {
     setRedeemOpen(false);
     setRedeemCode('');
-    setRedeemNote('');
+    setRedeemError('');
+    setRedeemShaking(false);
     setRedeemResult(null);
+  };
+
+  // Reject with a shake: state is cleared first so a repeated bad code
+  // restarts the animation instead of silently reusing a finished one.
+  const failRedeem = (message: string) => {
+    setRedeemError(message);
+    setRedeemShaking(false);
+    const retrigger = () => setRedeemShaking(true);
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(retrigger);
+    } else {
+      window.setTimeout(retrigger, 0);
+    }
   };
 
   const handleRedeemCode = () => {
     const code = redeemCode.trim().toLowerCase();
     if (!code) {
-      setRedeemNote('Enter a code first.');
+      failRedeem('Enter a code first.');
       return;
     }
     const ch = codes[code];
     if (ch === undefined) {
-      setRedeemNote('Unknown code.');
+      failRedeem('That code doesn’t match any chapter.');
       return;
     }
     gate.upload(ch, '');
     setRedeemCode('');
-    setRedeemNote('');
+    setRedeemError('');
+    setRedeemShaking(false);
     setRedeemResult({ chapter: ch, title: chapterTitle(ch) });
   };
 
@@ -569,19 +585,35 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
                 <p className="chapter-upload-blurb">
                   Enter a chapter code to unlock the chapter tier and its manifest-gated entries.
                 </p>
-                <label className="chapter-upload-num">
-                  Code
-                  <input
-                    type="text"
-                    value={redeemCode}
-                    onChange={(e) => setRedeemCode(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleRedeemCode();
-                    }}
-                    placeholder="e.g. CH1-AAA"
-                  />
-                </label>
-                {redeemNote && <p className="chapter-upload-note">{redeemNote}</p>}
+                <div
+                  className={`chapter-code-field${redeemError ? ' is-error' : ''}${
+                    redeemShaking ? ' shake' : ''
+                  }`}
+                  onAnimationEnd={() => setRedeemShaking(false)}
+                >
+                  <label className="chapter-upload-num">
+                    Code
+                    <input
+                      type="text"
+                      value={redeemCode}
+                      aria-invalid={redeemError ? true : undefined}
+                      aria-describedby={redeemError ? 'redeem-error' : undefined}
+                      onChange={(e) => {
+                        setRedeemCode(e.target.value);
+                        if (redeemError) setRedeemError('');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRedeemCode();
+                      }}
+                      placeholder="e.g. CH1-AAA"
+                    />
+                  </label>
+                </div>
+                {redeemError && (
+                  <p className="chapter-redeem-error" id="redeem-error" role="alert">
+                    <i className="fa-solid fa-circle-exclamation" aria-hidden="true" /> {redeemError}
+                  </p>
+                )}
                 <div className="chapter-upload-actions">
                   <button className="btn btn-ghost" onClick={closeRedeem}>
                     Close

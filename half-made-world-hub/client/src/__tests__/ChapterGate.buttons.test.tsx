@@ -116,7 +116,7 @@ describe('ChapterGate action buttons', () => {
     expect(gate.chapter).toBe(-1); // nothing else was mutated by the ceremony
   });
 
-  it('shows an error for an unknown code without unlocking anything', () => {
+  it('flags and shakes an unknown code without unlocking anything', () => {
     const gate = makeGate();
     render(<ChapterGate gate={gate} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
 
@@ -124,7 +124,20 @@ describe('ChapterGate action buttons', () => {
     fireEvent.change(screen.getByLabelText(/Code/i), { target: { value: 'NOPE' } });
     fireEvent.click(screen.getByRole('button', { name: /^Redeem$/i }));
 
-    expect(screen.getByText(/Unknown code/i)).toBeTruthy();
+    expect(screen.getByRole('alert').textContent).toMatch(/match any chapter/i);
+    expect(screen.getByLabelText(/Code/i).getAttribute('aria-invalid')).toBe('true');
+    expect(document.querySelector('.chapter-code-field')?.classList.contains('is-error')).toBe(true);
+    expect(gate.upload).not.toHaveBeenCalled();
+  });
+
+  it('asks for a code when the field is empty', () => {
+    const gate = makeGate();
+    render(<ChapterGate gate={gate} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Redeem code/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Redeem$/i }));
+
+    expect(screen.getByRole('alert').textContent).toMatch(/Enter a code first/i);
     expect(gate.upload).not.toHaveBeenCalled();
   });
 });
