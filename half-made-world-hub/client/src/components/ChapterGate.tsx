@@ -34,6 +34,48 @@ async function extractLegacyDocText(file: File): Promise<string> {
 }
 
 /** Extract readable text from a chapter file, including PDF and Word documents. */
+function reflowText(text: string): string {
+  const lines = text.split('\n');
+  const blocks: string[] = [];
+  let current: string[] = [];
+  const flush = () => {
+    if (current.length) {
+      blocks.push(current.join(' ').replace(/  +/g, ' ').trim());
+      current = [];
+    }
+  };
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (line.trim() === '') {
+      flush();
+      blocks.push('');
+      continue;
+    }
+    // Keep list items and headings as their own blocks.
+    if (/^\s*(?:[-*•]|\d+\.|#{1,6}\s)/.test(line)) {
+      flush();
+      blocks.push(line.trim());
+      continue;
+    }
+    current.push(line.trim());
+  }
+  flush();
+  // Collapse 3+ blank lines into a single blank line.
+  const out: string[] = [];
+  let blank = false;
+  for (const b of blocks) {
+    if (b === '') {
+      if (blank) continue;
+      blank = true;
+      out.push('');
+    } else {
+      blank = false;
+      out.push(b);
+    }
+  }
+  return out.join('\n').trim();
+}
+
 export async function extractTextFromFile(file: File): Promise<string> {
   const name = (file.name || '').toLowerCase();
   const type = (file.type || '').toLowerCase();
@@ -52,7 +94,10 @@ export async function extractTextFromFile(file: File): Promise<string> {
     text = await file.text();
   }
   // Keep the file's original line breaks consistent across every format.
-  return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // Reflow scattered single-line breaks into readable paragraphs while keeping
+  // blank lines (and list items) as separate blocks.
+  return reflowText(text);
 }
 
 async function extractPdfText(file: File): Promise<string> {
