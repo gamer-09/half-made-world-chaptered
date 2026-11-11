@@ -417,10 +417,10 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
             <i className="fa-solid fa-file-arrow-up" /> Upload a chapter
           </button>
           {canRegister && (
-            <button className="btn btn-ghost btn-sm" onClick={() => setRegisterOpen(true)} title="Register a chapter code"><i className="fa-solid fa-key" /> Register code</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => setRedeemOpen(true)} title="Redeem a chapter code">
-            <i className="fa-solid fa-magic" /> Redeem code
-          </button>
+            <>
+              <button className="btn btn-ghost btn-sm" onClick={() => setRegisterOpen(true)} title="Register a chapter code"><i className="fa-solid fa-key" /> Register code</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setRedeemOpen(true)} title="Redeem a chapter code"><i className="fa-solid fa-magic" /> Redeem code</button>
+            </>
           )}
           {(gate.chapter >= 0 || Object.keys(gate.uploaded).length > 0) && (
             <button className="btn btn-ghost btn-sm" onClick={gate.reset} title="Forget every upload and lock everything">
