@@ -164,7 +164,7 @@ export const readChapterFile = extractTextFromFile;
 export const fileToText = extractTextFromFile;
 export const getTextFromFile = extractTextFromFile;
 import type { ChapterGateApi } from '../hooks/useChapterGate';
-import { parseChapterNumber } from '../hooks/useChapterGate';
+import { hasChapterProse, parseChapterNumber } from '../hooks/useChapterGate';
 import { CHAPTERS } from '../chapters/manifest';
 import type { GateStats } from '../chapters/gate';
 import { Modal } from './Modal';
@@ -329,13 +329,17 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   };
 
   const submitUpload = () => {
+    if (!uploadText.trim()) {
+      setUploadNote('Add the chapter text — paste it or choose a file.');
+      return;
+    }
+    if (!hasChapterProse(uploadText)) {
+      setUploadNote('That is only a chapter heading. Paste the chapter’s text or choose a file.');
+      return;
+    }
     const n = Number(uploadNumber);
     if (!Number.isFinite(n) || n < 0 || uploadNumber.trim() === '') {
       setUploadNote('Enter a chapter number first.');
-      return;
-    }
-    if (!uploadText.trim()) {
-      setUploadNote('Add the chapter text — paste it or choose a file.');
       return;
     }
     gate.upload(n, uploadText);
@@ -450,7 +454,7 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
               onChange={(e) => {
                 setDisplayUploadText(e.target.value);
                 setUploadText(e.target.value);
-                if (uploadNumber.trim() === '') {
+                if (uploadNumber.trim() === '' && hasChapterProse(e.target.value)) {
                   const n = parseChapterNumber(e.target.value);
                   if (n !== null) setUploadNumber(String(n));
                 }

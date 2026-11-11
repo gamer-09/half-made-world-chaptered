@@ -36,6 +36,22 @@ function saveState(state: ChapterGateState) {
   }
 }
 
+/**
+ * True when the text is actual chapter prose, not just a heading like
+ * "Chapter 1". A bare heading must never unlock a chapter on its own — the
+ * uploaded text has to carry the story the gate scans for names.
+ */
+export function hasChapterProse(text: string): boolean {
+  const body = text
+    .replace(/\r\n?/g, '\n')
+    .replace(/^\s*(?:chapter|ch\.?|part)\s*\d{1,3}\b[^\n]*\n?/i, '')
+    .replace(/^\s*\d{1,3}\s*(?:[.:\-—–][^\n]*)?\n/, '')
+    .trim();
+  if (!body) return false;
+  const words = body.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w));
+  return body.length >= 40 && words.length >= 8;
+}
+
 /** Pull a chapter number out of a filename or pasted chapter text. */
 export function parseChapterNumber(input: string): number | null {
   if (!input) return null;
