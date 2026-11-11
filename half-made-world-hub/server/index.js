@@ -282,7 +282,7 @@ app.post('/api/chapter-codes', (req, res) => {
   const map = loadChapterCodes();
   const key = String(code).trim().toLowerCase();
   map[key] = ch;
-  saveChapterCodes(map);
+  saveChapterCodes(map, { action: 'register', code: key });
   res.status(201).json({ ok: true, code: String(code).trim(), chapter: ch });
 });
 
@@ -305,7 +305,7 @@ app.put('/api/chapter-codes/:code', (req, res) => {
   }
   if (nextKey !== key) delete map[key];
   map[nextKey] = ch;
-  saveChapterCodes(map);
+  saveChapterCodes(map, { action: 'update', code: nextKey });
   res.json({ ok: true, code: String(code).trim(), chapter: ch });
 });
 
@@ -314,7 +314,7 @@ app.delete('/api/chapter-codes/:code', (req, res) => {
   const key = decodeURIComponent(req.params.code).toLowerCase().trim();
   if (!(key in map)) return res.status(404).json({ error: 'Code not found' });
   delete map[key];
-  saveChapterCodes(map);
+  saveChapterCodes(map, { action: 'remove', code: key });
   res.json({ ok: true });
 });
 

@@ -74,17 +74,34 @@ function syncAll() {
 
 let timer = null;
 let pendingTag = '';
+let pendingHooks = [];
 
 // Debounced auto-sync. Call after any data write; bursts coalesce into one pass.
-function scheduleSync(tag = 'data changed') {
+// `afterSync` runs once the pass succeeds — the place for work that must see the
+// regenerated files (the chapter-code commit reads snapshot.json).
+function scheduleSync(tag = 'data changed', afterSync = null) {
+  pendingTag = tag;
+  if (typeof afterSync === 'function') pendingHooks.push(afterSync);
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
     timer = null;
+    const hooks = pendingHooks;
+    pendingHooks = [];
+    let changed = [];
     try {
-      const changed = syncAll();
-      if (changed.length) console.log(`[sync] ${tag} → ${changed.join(', ')}`);
+      changed = syncAll();
+      if (changed.length) console.log(`[sync] ${pendingTag} → ${changed.join(', ')}`);
     } catch (err) {
+      // Skip the hooks: they would publish the stale artifacts we failed to write.
       console.error('[sync] failed:', err.message);
+      return;
+    }
+    for (const hook of hooks) {
+      try {
+        hook(changed);
+      } catch (err) {
+        console.error('[sync] follow-up failed:', err.message);
+      }
     }
   }, 400);
   if (timer.unref) timer.unref();

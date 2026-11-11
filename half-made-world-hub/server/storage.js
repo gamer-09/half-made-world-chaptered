@@ -101,12 +101,20 @@ function loadChapterCodes() {
   return {};
 }
 
-function saveChapterCodes(map) {
+function saveChapterCodes(map, meta = {}) {
   ensureDataFile();
   fs.writeFileSync(CODES_FILE, JSON.stringify(map || {}, null, 2), 'utf-8');
   try {
     const { scheduleSync } = require('./pipeline');
-    scheduleSync('chapter codes updated');
+    // Sync first, then commit: the push has to carry the regenerated
+    // snapshot.json, which is what the deployed build actually reads.
+    scheduleSync('chapter codes updated', () => {
+      try {
+        require('./git-sync').scheduleChapterCodeCommit(meta);
+      } catch (err) {
+        console.error('[git] chapter code auto-push unavailable:', err.message);
+      }
+    });
   } catch {
     /* pipeline unavailable — skip sync */
   }
