@@ -594,10 +594,10 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
           <div className="chapter-upload">
             <h2 className="chapter-upload-title">Upload a chapter</h2>
             <p className="chapter-upload-blurb">
-              Uploading a chapter is the only way to open the archive. Its text is read for the
-              entries and names it puts on the page — those are revealed, and everything the story
-              hasn’t reached yet stays locked. The whole chapter is checked against the book text,
-              so a heading or a partial paste won’t unlock anything.
+              Upload a chapter to open the archive. Its text is read for the entries and names it
+              puts on the page — those are revealed, and everything the story hasn’t reached yet
+              stays locked. The whole chapter is checked against the book text, so a heading or a
+              partial paste won’t unlock anything.
             </p>
 
             <div className="chapter-upload-row">
@@ -667,6 +667,25 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
               </button>
               <button className="btn btn-primary" onClick={submitUpload}>
                 Unlock chapter
+              </button>
+            </div>
+
+            <div className="chapter-upload-alt">
+              <p className="chapter-upload-alt-text">
+                <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                <span>
+                  <strong>No chapter file?</strong> You can still get in with a code instead — every
+                  chapter ends with one.
+                </span>
+              </p>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  closeUpload();
+                  setRedeemOpen(true);
+                }}
+              >
+                <i className="fa-solid fa-magic" aria-hidden="true" /> Redeem a code
               </button>
             </div>
           </div>

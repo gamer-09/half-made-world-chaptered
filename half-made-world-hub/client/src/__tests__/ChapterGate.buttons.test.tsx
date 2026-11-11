@@ -63,6 +63,28 @@ describe('ChapterGate action buttons', () => {
     expect(screen.getByRole('button', { name: /Unlock chapter/i })).toBeTruthy();
   });
 
+  it('offers the redeem route to readers who have no chapter file', () => {
+    const onUploadOpenChange = vi.fn();
+    render(
+      <ChapterGate
+        gate={makeGate()}
+        stats={null}
+        uploadOpen
+        onUploadOpenChange={onUploadOpenChange}
+      />,
+    );
+
+    const alt = document.querySelector('.chapter-upload-alt');
+    expect(alt).toBeTruthy();
+    expect(alt?.textContent).toMatch(/No chapter file\?/i);
+    expect(alt?.textContent).toMatch(/every chapter ends with one/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /Redeem a code/i }));
+
+    expect(onUploadOpenChange).toHaveBeenCalledWith(false);
+    expect(screen.getByRole('heading', { name: /Redeem a chapter code/i })).toBeTruthy();
+  });
+
   it('opens the redeem modal independently of the upload modal', () => {
     render(
       <ChapterGate gate={makeGate()} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />,

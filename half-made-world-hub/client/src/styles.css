@@ -2875,6 +2875,45 @@ select.input {
 .chapter-upload-note--error i,
 .chapter-upload-note--loading i { font-size: 11px; }
 .chapter-upload-actions { display: flex; justify-content: flex-end; gap: 9px; }
+
+/* Uploading is not the only way in, and readers who have no file need to know
+   that before they give up — so the alternative sits at the bottom in warning
+   red rather than being buried in the blurb. */
+.chapter-upload-alt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(194, 94, 74, 0.5);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--r-sm);
+  background: rgba(194, 94, 74, 0.1);
+}
+
+.chapter-upload-alt-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.chapter-upload-alt-text i {
+  flex: none;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.chapter-upload-alt-text strong { color: var(--danger); }
+
+.chapter-upload-alt .btn {
+  flex: none;
+  margin-left: auto;
+}
+
 /* ============ Redeem field / error feedback ============ */
 /* Every chapter closes with its unlock code, so tell readers where to look
    before they start hunting for one. */
