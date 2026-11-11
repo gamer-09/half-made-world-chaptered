@@ -119,6 +119,8 @@ export default function App() {
           'then', 'there', 'these', 'they', 'this', 'those', 'through', 'to', 'too',
           'up', 'us', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who',
           'whom', 'why', 'will', 'with', 'would', 'you', 'your', 'yours', 'chapter',
+          'after', 'before', 'hey', 'just', 'let', 'me', 'be', 'though', 'while',
+          'race', 'rank', 'class', 'starting', 'west', 'gates', 'students',
         ]);
         const found = new Set<string>();
         // Only treat words on the SAME line as a single name — never combine
@@ -136,8 +138,18 @@ export default function App() {
           const c = candidate.toLowerCase().replace(/\s+/g, ' ').trim();
           // An entry "exists" if its name contains the full candidate phrase,
           // so "Fifth Pillar" matches an entry named "The Fifth Pillar".
-          const exists = entryNames.some((n) => n === c || n.includes(c));
-          if (!exists) found.add(candidate);
+          // Bidirectional: present if an entry name is contained in the candidate
+          // or vice-versa (so "Malakhim Angel" matches the "Malakhim" entry).
+          const exists = entryNames.some(
+            (n) => n === c || n.includes(c) || c.includes(n),
+          );
+          if (exists) continue;
+          // Skip noisy all-caps / sentence-fragment candidates.
+          const ws = candidate.split(/\s+/);
+          if (ws.length > 3) continue;
+          if (ws.every((w) => /^[A-Z]+$/.test(w))) continue;
+          if (ws.some((w) => stop.has(w.toLowerCase()))) continue;
+          found.add(candidate);
         }
         if (!cancelled) setMissingMentions([...found].sort());
       } catch {
