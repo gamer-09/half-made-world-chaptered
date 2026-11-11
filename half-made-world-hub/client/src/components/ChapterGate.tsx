@@ -1,4 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import mammoth from 'mammoth';
+
+if (typeof window !== 'undefined') {
+  (pdfjsLib as any).GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+}
 
 async function extractLegacyDocText(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
@@ -50,14 +57,7 @@ async function extractPdfText(file: File): Promise<string> {
   const data = new Uint8Array(await file.arrayBuffer());
   // Browser path: standard build with a worker.
   try {
-    const pdfjs: any = await import('pdfjs-dist');
-    try {
-      const worker: any = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
-      if (worker?.default) pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
-    } catch {
-      /* worker optional in some environments */
-    }
-    const doc = await pdfjs.getDocument({ data }).promise;
+    const doc = await (pdfjsLib as any).getDocument({ data }).promise;
     return await collectPdfText(doc);
   } catch {
     // Fallback for Node/jsdom (and older browsers): legacy build, no worker.
@@ -81,17 +81,16 @@ async function collectPdfText(doc: any): Promise<string> {
 }
 
 async function extractDocxText(file: File): Promise<string> {
-  const mammoth: any = await import('mammoth');
   const buffer = await file.arrayBuffer();
   // Browser build of mammoth accepts an ArrayBuffer.
   try {
-    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+    const result = await (mammoth as any).extractRawText({ arrayBuffer: buffer });
     return (result?.value ?? '').toString();
   } catch {
     // Node/jsdom (and mammoth's node build) accept a Buffer.
     const BufferCtor = (globalThis as any).Buffer;
     if (typeof BufferCtor !== 'undefined') {
-      const result = await mammoth.extractRawText({ buffer: BufferCtor.from(buffer) });
+      const result = await (mammoth as any).extractRawText({ buffer: BufferCtor.from(buffer) });
       return (result?.value ?? '').toString();
     }
     throw new Error('Could not read that Word document.');
