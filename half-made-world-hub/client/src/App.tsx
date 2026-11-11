@@ -72,10 +72,45 @@ function buildMarkdown(entries: Entry[]): string {
 
 export default function App() {
   const gate = useChapterGate();
+  const [missingMentions, setMissingMentions] = useState<string[]>([]);
   // Publish the gate before the archive loads so the first fetch is already
   // sliced — otherwise the full archive would flash before the reload.
   setActiveGate(gate.config);
   const archive = useArchive();
+
+  // Scan uploaded chapters for capitalized names that have no archive entry,
+  // so the reader can see what still needs to be added.
+  useEffect(() => {
+    const texts = Object.values(gate.uploaded || {}).join('\n');
+    if (!texts.trim()) {
+      setMissingMentions([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(import.meta.env.BASE_URL + 'snapshot.json');
+        if (!res.ok) return;
+        const data = await res.json();
+        const nameSet = new Set(
+          (data.entries || []).map((e: any) => String(e.name || '').toLowerCase()),
+        );
+        const found = new Set<string>();
+        const re = /\b([A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)+)\b/g;
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(texts)) !== null) {
+          const candidate = m[1].trim();
+          if (!nameSet.has(candidate.toLowerCase())) found.add(candidate);
+        }
+        if (!cancelled) setMissingMentions([...found].sort());
+      } catch {
+        if (!cancelled) setMissingMentions([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [gate.uploaded]);
   // The reader build is view-only. Editing is a local authoring tool, so it is
   // only possible in a dev build; the chapter gate is orthogonal to it.
   const canEdit = import.meta.env.DEV;
@@ -669,6 +704,19 @@ export default function App() {
           uploadOpen={uploadOpen}
           onUploadOpenChange={setUploadOpen}
         />
+
+        {missingMentions.length > 0 && (
+          <div className="missing-entries-corner">
+            <h4 className="missing-entries-title">Mentioned, but no entry</h4>
+            <ul className="missing-entries-list">
+              {missingMentions.map((name) => (
+                <li key={name}>
+                  {name} <span className="missing-entries-note">— no entry yet</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className={`view-transition${isBlocksView || isPlanningView || isCanonView || isWeaveView || isFlavorView ? ' view-fill' : ''}`} key={viewKey}>
         {loading ? (
