@@ -3275,8 +3275,77 @@ select.input {
 .chapter-upload-note--error i,
 .chapter-upload-note--loading i { font-size: 11px; }
 .chapter-upload-actions { display: flex; justify-content: flex-end; gap: 9px; }
-.chapter-code-row { display: flex; gap: 8px; align-items: center; }
-.chapter-code-input { flex: 1; padding: 8px 10px; border-radius: var(--r-sm, 6px); border: 1px solid var(--line, #ccc); background: var(--panel-2, #f7f7f7); color: var(--text); font-size: 12px; }
+.chapter-code-row { display: flex; gap: var(--sp-2); align-items: center; }
+
+.chapter-code-input {
+  all: initial;
+  flex: 1;
+  font: var(--font-ui);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  caret-color: var(--brass);
+}
+
+.chapter-code-input:focus {
+  outline: none;
+  border-color: var(--brass);
+  box-shadow: var(--glow);
+}
+
+.chapter-code-input::placeholder {
+  color: var(--muted);
+}
+
+.redeem-btn {
+  all: initial;
+  flex-shrink: 0;
+  font: var(--font-ui);
+  padding: var(--sp-1) var(--sp-3);
+  background: var(--panel-2);
+  color: var(--brass);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.redeem-btn:hover {
+  background: var(--panel-3);
+  border-color: var(--brass);
+}
+
+.redeem-btn:active {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.redeem-btn:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+.redeem-btn.redeeming {
+  animation: pulseBrass 0.4s ease-in-out infinite;
+}
+
+@keyframes pulseBrass {
+  0%, 100% { box-shadow: var(--glow); }
+  50% { box-shadow: 0 0 0 2px var(--brass), var(--glow); }
+}
+
+.redeem-btn.redeeming + .chapter-code-input {
+  animation: inputShimmer 0.3s ease-out;
+}
+
+@keyframes inputShimmer {
+  from { background: var(--panel); }
+  to { background: var(--panel-2); }
+}
+
+.chapter-code-row { display: flex; gap: var(--sp-2); align-items: center; }
 
 /* ============ Locked details ============ */
 .locked-note {

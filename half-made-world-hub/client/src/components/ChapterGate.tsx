@@ -506,7 +506,7 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
                 value={codeInput}
                 onChange={(e) => setCodeInput(e.target.value)}
               />
-              <button className="btn btn-secondary btn-sm" onClick={redeemCode}>
+              <button className="btn btn-secondary btn-sm redeem-btn" onClick={redeemCode}>
                 Redeem
               </button>
             </div>
