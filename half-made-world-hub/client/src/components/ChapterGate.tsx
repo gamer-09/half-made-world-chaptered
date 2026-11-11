@@ -187,6 +187,12 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   const [uploadNote, setUploadNote] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [uploadError, setUploadError] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [codeNote, setCodeNote] = useState('');
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [registerCode, setRegisterCode] = useState('');
+  const [registerChapter, setRegisterChapter] = useState('');
+  const [registerNote, setRegisterNote] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Every chapter the reader could be on: the known ones plus any uploaded.
@@ -195,6 +201,61 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
     for (const k of Object.keys(gate.uploaded)) nums.add(Number(k));
     return [...nums].sort((a, b) => a - b);
   }, [gate.uploaded]);
+
+  function loadChapterCodes(): Record<string, number> {
+    try {
+      const raw = localStorage.getItem('hmw-chapter-codes');
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed as Record<string, number>;
+    } catch {
+      /* ignore */
+    }
+    return {};
+  }
+  function saveChapterCodes(map: Record<string, number>) {
+    try {
+      localStorage.setItem('hmw-chapter-codes', JSON.stringify(map));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const redeemCode = () => {
+    const code = codeInput.trim();
+    if (!code) {
+      setCodeNote('Enter a code first.');
+      return;
+    }
+    const map = loadChapterCodes();
+    const ch = map[code.toLowerCase()];
+    if (ch === undefined) {
+      setCodeNote('Unknown code.');
+      return;
+    }
+    gate.upload(ch, '');
+    setCodeNote(`Unlocked chapter ${ch}.`);
+    setCodeInput('');
+  };
+
+  const registerCodeFn = () => {
+    const code = registerCode.trim();
+    const ch = Number(registerChapter);
+    if (!code) {
+      setRegisterNote('Enter a code.');
+      return;
+    }
+    if (!Number.isFinite(ch) || ch < 0 || registerChapter.trim() === '') {
+      setRegisterNote('Enter a chapter number.');
+      return;
+    }
+    const map = loadChapterCodes();
+    map[code.toLowerCase()] = ch;
+    saveChapterCodes(map);
+    setRegisterNote(`Registered “${code}” → chapter ${ch}.`);
+    setRegisterCode('');
+    setRegisterChapter('');
+  };
 
   const onPickFile = async (file: File) => {
     setIsParsing(true);
@@ -288,6 +349,9 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
           <button className="btn btn-ghost btn-sm" onClick={() => onUploadOpenChange(true)} title="Paste or upload a chapter">
             <i className="fa-solid fa-file-arrow-up" /> Upload a chapter
           </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setRegisterOpen(true)} title="Register a chapter code">
+            <i className="fa-solid fa-key" /> Register code
+          </button>
           {(gate.chapter >= 0 || Object.keys(gate.uploaded).length > 0) && (
             <button className="btn btn-ghost btn-sm" onClick={gate.reset} title="Forget every upload and lock everything">
               <i className="fa-solid fa-rotate-left" /> Reset
@@ -367,12 +431,65 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
               </p>
             )}
 
+            <div className="chapter-code-row">
+              <input
+                className="chapter-code-input"
+                type="text"
+                placeholder="Have a chapter code?"
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value)}
+              />
+              <button className="btn btn-secondary btn-sm" onClick={redeemCode}>
+                Redeem
+              </button>
+            </div>
+            {codeNote && <p className="chapter-upload-note">{codeNote}</p>}
+
             <div className="chapter-upload-actions">
               <button className="btn btn-ghost" onClick={closeUpload}>
                 Cancel
               </button>
               <button className="btn btn-primary" onClick={submitUpload}>
                 Unlock chapter
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {registerOpen && (
+        <Modal onClose={() => setRegisterOpen(false)} wide>
+          <div className="chapter-upload">
+            <h2 className="chapter-upload-title">Register a chapter code</h2>
+            <p className="chapter-upload-blurb">
+              Create a code that unlocks a chapter for readers who can't get the chapter text.
+            </p>
+            <label className="chapter-upload-num">
+              Code
+              <input
+                type="text"
+                value={registerCode}
+                onChange={(e) => setRegisterCode(e.target.value)}
+                placeholder="e.g. CH4-SECRET"
+              />
+            </label>
+            <label className="chapter-upload-num">
+              Chapter
+              <input
+                type="number"
+                min={0}
+                value={registerChapter}
+                onChange={(e) => setRegisterChapter(e.target.value)}
+                placeholder="e.g. 4"
+              />
+            </label>
+            {registerNote && <p className="chapter-upload-note">{registerNote}</p>}
+            <div className="chapter-upload-actions">
+              <button className="btn btn-ghost" onClick={() => setRegisterOpen(false)}>
+                Close
+              </button>
+              <button className="btn btn-primary" onClick={registerCodeFn}>
+                Register
               </button>
             </div>
           </div>

@@ -3275,6 +3275,8 @@ select.input {
 .chapter-upload-note--error i,
 .chapter-upload-note--loading i { font-size: 11px; }
 .chapter-upload-actions { display: flex; justify-content: flex-end; gap: 9px; }
+.chapter-code-row { display: flex; gap: 8px; align-items: center; }
+.chapter-code-input { flex: 1; padding: 8px 10px; border-radius: var(--r-sm, 6px); border: 1px solid var(--line, #ccc); background: var(--panel-2, #f7f7f7); color: var(--text); font-size: 12px; }
 
 /* ============ Locked details ============ */
 .locked-note {
