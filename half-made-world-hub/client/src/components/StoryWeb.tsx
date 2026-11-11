@@ -25,7 +25,7 @@ const CATEGORY_ORDER = [
   'Magic Systems', 'Rules & Notes', 'Classes', 'Class Skills', 'Class Progression',
   'Grade System', 'Rune Star Circles', 'Innate Abilities', 'Skill Mechanics', 'Concepts',
   // Skills & forms by race
-  'Angel Skills', 'Demon Skills', 'Hybrid Skills', 'Artifact Skills', 'Character Forms',
+  'Angel Skills', 'Demon Skills', 'Hybrid Skills', 'Ruler Skills', 'Artifact Skills', 'Character Forms',
   // Things
   'Items', 'Artifacts', 'Equipment', 'Coins', 'Resources',
   // Society

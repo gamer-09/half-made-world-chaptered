@@ -2678,6 +2678,10 @@
       {
         "label": "Cross-class",
         "value": "Learning skills from a class other than your own is extremely difficult for humans — most never manage it and stick to what the altar gave them."
+      },
+      {
+        "label": "Ruler exception",
+        "value": "Ruby Divina, ruler of the Human Realm, is limited to 2 class skills because she also carries the 14 Human Realm ruler skills. See Human Realm Ruler Skill Limit."
       }
     ],
     "tags": [
@@ -2686,7 +2690,48 @@
       "limit"
     ],
     "createdAt": "2026-08-12T00:00:00.000Z",
-    "updatedAt": "2026-08-12T00:00:00.000Z"
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7237",
+    "category": "Rules & Notes",
+    "name": "Human Realm Ruler Skill Limit",
+    "subtitle": "Ruby Divina gets 2 class skills plus her 14 ruler skills",
+    "description": "Ordinary humans can learn every skill of their class, but the ruler of the Human Realm is capped at 2 class skills. The cap exists because the ruler also carries the 14 Human Realm ruler skills: without it, Ruby Divina could stack an almost endless spread of skills from the 19 classes on top of her ruler powers — too much for one mortal ruler to hold, and far beyond the angel and demon rulers. The 2 class skills are drawn from her own class, Berserker. The same balancing logic already caps angels and demons at 5 class skills because they carry innate skills.",
+    "fields": [
+      {
+        "label": "Applies to",
+        "value": "Ruby Divina, ruler of the Human Realm"
+      },
+      {
+        "label": "Class skills allowed",
+        "value": "2 — drawn from her class, Berserker"
+      },
+      {
+        "label": "Ruler skills",
+        "value": "14 — each has its own entry in the Ruler Skills category"
+      },
+      {
+        "label": "Why",
+        "value": "Without the cap she could stack a near-endless spread of class skills on top of her ruler skills; the cap mirrors the 5-class-skill limit on angels and demons."
+      },
+      {
+        "label": "See also",
+        "value": "Class Skill Limits"
+      }
+    ],
+    "tags": [
+      "rule",
+      "ruler",
+      "class",
+      "skill",
+      "limit",
+      "human realm",
+      "ruby divina",
+      "berserker"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
   },
   {
     "id": "seed-076",
@@ -5014,6 +5059,18 @@
       {
         "label": "Grade",
         "value": "B Grade"
+      },
+      {
+        "label": "Class",
+        "value": "Berserker"
+      },
+      {
+        "label": "Class Skills",
+        "value": "Limited to 2 class skills — the only class skills she may hold, drawn from the Berserker list. The human rule lets a human learn every skill of their class, but as ruler she also carries the 14 Human Realm ruler skills, so the 2-skill cap keeps her from stacking a near-endless spread of class skills on top of them. The same balancing logic already caps angels and demons at 5 class skills."
+      },
+      {
+        "label": "Ruler Skills",
+        "value": "Indomitable Tempering, Lightless Step, Gaia's War Blessing, Fang of the Stone Tyrant, Genesis of Stone, Thousand Thread Casting, Starfall Barrage, Annihilation Roar of the Fire Dragon, Crimson Chains of Subjugation, Sovereign's Gaze Seal, Whisper of Absolute Obedience, Infinite Imperial Armory, Touch of Ten Thousand Masters, Eternal Hollow: Cavern of Devouring — each skill has its own entry in the Ruler Skills category."
       }
     ],
     "tags": [
@@ -5022,7 +5079,7 @@
       "human realm"
     ],
     "createdAt": "2026-08-12T00:00:00.000Z",
-    "updatedAt": "2026-08-12T00:00:00.000Z"
+    "updatedAt": "2026-11-03T00:00:00.000Z"
   },
   {
     "id": "seed-149",
@@ -16512,6 +16569,393 @@
     ],
     "createdAt": "2026-08-12T00:00:00.000Z",
     "updatedAt": "2026-08-12T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7238",
+    "category": "Ruler Skills",
+    "name": "Indomitable Tempering",
+    "subtitle": "Human Realm ruler skill",
+    "description": "You don't tire in battle. You ripen.\n\nThe longer you fight, the heavier your aura becomes, the harder your skin, the faster your heart. Enemies realize too late they are forging their own executioner.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "Only grows during real life-and-death combat. Resets after battle. If the fight ends too fast, you gain nothing."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "combat",
+      "buff",
+      "endurance"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7239",
+    "category": "Ruler Skills",
+    "name": "Lightless Step",
+    "subtitle": "Human Realm ruler skill",
+    "description": "A step without light or sound.\n\nYou vanish and reappear elsewhere, leaving only dust and an afterimage. To onlookers, it is teleportation.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "Tears your leg muscles if chained too many times. Needs a breath between dashes."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "movement",
+      "stealth"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7240",
+    "category": "Ruler Skills",
+    "name": "Gaia's War Blessing",
+    "subtitle": "Human Realm ruler skill",
+    "description": "The earth possesses you.\n\nStone veins crawl up your arms, your voice deepens, your strength turns monstrous. You laugh in the middle of slaughter.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Chant",
+        "value": "“Join me, and I’ll grant you a moment’s joy of battle.”"
+      },
+      {
+        "label": "Limit",
+        "value": "After it fades, your body goes numb and heavy for hours. You cannot use it again until you recover."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "earth",
+      "buff"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7241",
+    "category": "Ruler Skills",
+    "name": "Fang of the Stone Tyrant",
+    "subtitle": "Human Realm ruler skill",
+    "description": "You pull a spear from the ground itself.\n\nA spear of black stone laced with gold light. It pierces armor, shields, and defensive magic like paper.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "Only one can exist at a time. If it shatters, your arm goes numb from backlash."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "earth",
+      "weapon",
+      "offensive"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7242",
+    "category": "Ruler Skills",
+    "name": "Genesis of Stone",
+    "subtitle": "Human Realm ruler skill",
+    "description": "Whatever you imagine, the earth builds.\n\nSwords, walls, fortresses, giant stone hands, a bridge over an abyss — if you can see it clearly in your mind, it rises.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "Drains huge mana. Complex things require total concentration. A broken image creates a broken creation."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "earth",
+      "construction"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7243",
+    "category": "Ruler Skills",
+    "name": "Thousand Thread Casting",
+    "subtitle": "Human Realm ruler skill",
+    "description": "Other mages cast with one voice. You cast with a choir.\n\nYou split your mind and release multiple spells in the same instant — fire + chains + shield, all at once.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "Each extra spell splits your focus. Too many at once causes nosebleeds, headaches, and collapse."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "magic",
+      "multicast"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7244",
+    "category": "Ruler Skills",
+    "name": "Starfall Barrage",
+    "subtitle": "Human Realm ruler skill",
+    "description": "You raise your hand and the sky fires.\n\nHundreds of pure white-blue mana bullets scream down like falling stars, shredding everything you mark.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "Wild and hungry. It eats mana fast. Without control, it will hit allies too."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "magic",
+      "offensive",
+      "area"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7245",
+    "category": "Ruler Skills",
+    "name": "Annihilation Roar of the Fire Dragon",
+    "subtitle": "Human Realm ruler skill",
+    "description": "You inhale, and then the world burns.\n\nA vast, wide torrent of dragonfire erupts forward, melting stone and vaporizing flesh. The ground stays burning long after.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "Burns your own throat and lungs. You can only roar a few times a day before coughing blood."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "fire",
+      "offensive"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7246",
+    "category": "Ruler Skills",
+    "name": "Crimson Chains of Subjugation",
+    "subtitle": "Human Realm ruler skill",
+    "description": "Blood-red chains explode from the air.\n\nThey wrap limbs, necks, and weapons, locking all movement. The stronger YOU are, the harder they become — to most, they are unbreakable.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "Linked to your stamina. If your will wavers, the chains loosen."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "binding",
+      "control"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7247",
+    "category": "Ruler Skills",
+    "name": "Sovereign's Gaze Seal",
+    "subtitle": "Human Realm ruler skill",
+    "description": "You look at them. They stop existing as fighters.\n\nAnyone caught in your gaze is nailed to that spot — no movement, no magic, no escape. They can only breathe and despair.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "You must maintain eye contact. Blinking or looking away weakens it. Gods stronger than you can break it in seconds."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "control",
+      "gaze"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7248",
+    "category": "Ruler Skills",
+    "name": "Whisper of Absolute Obedience",
+    "subtitle": "Human Realm ruler skill",
+    "description": "Emperors don't shout. They whisper, and the world kneels.\n\nA soft command that brands itself on the soul. Anyone weaker than you MUST obey — sleep, kneel, drop your sword, kill your ally.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "Absolute only on the weak. Equals can resist. Stronger beings will hear it as just a whisper — and they will be enraged you tried."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "command",
+      "control",
+      "mental"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7249",
+    "category": "Ruler Skills",
+    "name": "Infinite Imperial Armory",
+    "subtitle": "Human Realm ruler skill",
+    "description": "You reach into air and draw war.\n\nAny weapon you name appears in your hand, forged perfectly from mana — sword, spear, bow, scythe, axe.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "The weapon only lives while you hold it. Lend it to another, and it turns to dust."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "weapon",
+      "conjuration"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7250",
+    "category": "Ruler Skills",
+    "name": "Touch of Ten Thousand Masters",
+    "subtitle": "Human Realm ruler skill",
+    "description": "Pick it up. You have mastered it.\n\nThe moment your fingers close around any weapon, your body knows it — its weight, its tricks, its killing forms, as if you trained 100 years.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm"
+      },
+      {
+        "label": "Limit",
+        "value": "You gain skill, not the weapon's memory. A cursed or sentient weapon can still reject you."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "weapon",
+      "mastery"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "seed-7251",
+    "category": "Ruler Skills",
+    "name": "Eternal Hollow: Cavern of Devouring",
+    "subtitle": "Human Realm ruler skill — ultimate",
+    "description": "Your ultimate. You don't fight in the world. You swallow them into yours.\n\nA colossal living cavern of stone rises and traps your enemies. Inside, the walls steal their strength and feed it to you, while stone jaws, spikes, and fists attack endlessly from all sides.",
+    "fields": [
+      {
+        "label": "Type",
+        "value": "Ruler Skill — Human Realm (ultimate)"
+      },
+      {
+        "label": "Limit",
+        "value": "This is your life on the line. Maintaining the domain burns your lifespan and soul. If they break the core of the cavern, you suffer the same wounds."
+      }
+    ],
+    "tags": [
+      "skill",
+      "ruler",
+      "human realm",
+      "ruby divina",
+      "ultimate",
+      "domain",
+      "earth"
+    ],
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
   },
   {
     "id": "seed-542",

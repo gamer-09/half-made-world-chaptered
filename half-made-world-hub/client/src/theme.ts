@@ -40,6 +40,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   'Angel Skills': '#e8d9a0',
   'Demon Skills': '#c25e4a',
   'Hybrid Skills': '#d4a5a5',
+  'Ruler Skills': '#c8a876',
   'Artifact Skills': '#c8a876',
   'Character Forms': '#d4a5a5',
 

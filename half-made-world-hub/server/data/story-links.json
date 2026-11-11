@@ -44675,5 +44675,185 @@
     "description": "The Eternal Forge’s temperature must be constantly regulated.",
     "createdAt": "2026-08-12T00:00:00.000Z",
     "updatedAt": "2026-08-12T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4388",
+    "source": "Ruby Divina",
+    "target": "Human Realm Ruler Skill Limit",
+    "type": "subject of",
+    "label": "Subject of",
+    "description": "Ruby Divina is the ruler constrained by the 2-class-skill limit.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4389",
+    "source": "Human Realm Ruler Skill Limit",
+    "target": "Class Skill Limits",
+    "type": "expands on",
+    "label": "Expands on",
+    "description": "The ruler limit is an exception layered on the general class skill limits.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4390",
+    "source": "Human Realm Ruler Skill Limit",
+    "target": "Berserker",
+    "type": "restricts class of",
+    "label": "Restricts class of",
+    "description": "Ruby Divina may hold only 2 class skills from her Berserker class.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4391",
+    "source": "Human Realm Ruler Skill Limit",
+    "target": "Ruby Divina",
+    "type": "limits",
+    "label": "Limits",
+    "description": "Caps Ruby Divina at 2 class skills because she also carries the 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4392",
+    "source": "Ruby Divina",
+    "target": "Indomitable Tempering",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Indomitable Tempering is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4393",
+    "source": "Ruby Divina",
+    "target": "Lightless Step",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Lightless Step is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4394",
+    "source": "Ruby Divina",
+    "target": "Gaia's War Blessing",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Gaia's War Blessing is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4395",
+    "source": "Ruby Divina",
+    "target": "Fang of the Stone Tyrant",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Fang of the Stone Tyrant is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4396",
+    "source": "Ruby Divina",
+    "target": "Genesis of Stone",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Genesis of Stone is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4397",
+    "source": "Ruby Divina",
+    "target": "Thousand Thread Casting",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Thousand Thread Casting is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4398",
+    "source": "Ruby Divina",
+    "target": "Starfall Barrage",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Starfall Barrage is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4399",
+    "source": "Ruby Divina",
+    "target": "Annihilation Roar of the Fire Dragon",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Annihilation Roar of the Fire Dragon is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4400",
+    "source": "Ruby Divina",
+    "target": "Crimson Chains of Subjugation",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Crimson Chains of Subjugation is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4401",
+    "source": "Ruby Divina",
+    "target": "Sovereign's Gaze Seal",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Sovereign's Gaze Seal is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4402",
+    "source": "Ruby Divina",
+    "target": "Whisper of Absolute Obedience",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Whisper of Absolute Obedience is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4403",
+    "source": "Ruby Divina",
+    "target": "Infinite Imperial Armory",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Infinite Imperial Armory is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4404",
+    "source": "Ruby Divina",
+    "target": "Touch of Ten Thousand Masters",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Touch of Ten Thousand Masters is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
+  },
+  {
+    "id": "link-seed-4405",
+    "source": "Ruby Divina",
+    "target": "Eternal Hollow: Cavern of Devouring",
+    "type": "has skill",
+    "label": "Ruler Skill",
+    "description": "Eternal Hollow: Cavern of Devouring is one of Ruby Divina's 14 Human Realm ruler skills.",
+    "createdAt": "2026-11-03T00:00:00.000Z",
+    "updatedAt": "2026-11-03T00:00:00.000Z"
   }
 ]
