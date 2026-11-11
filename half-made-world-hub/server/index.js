@@ -1,4 +1,5 @@
 const express = require('express');
+const WordExtractor = require('word-extractor');
 require('dotenv').config({ path: require('path').resolve(__dirname, '..', '.env') });
 const cors = require('cors');
 const crypto = require('crypto');
@@ -2440,6 +2441,34 @@ Return ONLY JSON (no prose, no code fences):
     });
   } catch (err) {
     sendAiError(res, 'flavor', err);
+  }
+});
+
+// --- Legacy .doc text extraction ------------------------------------------
+app.post('/api/convert/doc', async (req, res) => {
+  try {
+    const { data } = req.body || {};
+    if (typeof data !== 'string' || !data.trim()) {
+      return res.status(400).json({ error: 'Missing base64 file data.' });
+    }
+    let buffer;
+    try {
+      buffer = Buffer.from(data, 'base64');
+    } catch {
+      return res.status(400).json({ error: 'Invalid base64 file data.' });
+    }
+    const extractor = new WordExtractor();
+    const doc = await extractor.extract(buffer);
+    const parts = [
+      doc.getBody && doc.getBody(),
+      doc.getHeaders && doc.getHeaders(),
+      doc.getFootnotes && doc.getFootnotes(),
+      doc.getEndnotes && doc.getEndnotes(),
+      doc.getTextboxes && doc.getTextboxes(),
+    ].filter((s) => typeof s === 'string' && s.trim());
+    res.json({ text: parts.join('\n\n') });
+  } catch (err) {
+    res.status(500).json({ error: err?.message || 'Could not convert that .doc file.' });
   }
 });
 

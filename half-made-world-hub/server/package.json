@@ -10,6 +10,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "word-extractor": "^1.0.4"
   }
 }

@@ -1,4 +1,108 @@
 import { useMemo, useRef, useState } from 'react';
+
+async function extractLegacyDocText(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
+
+  const res = await fetch('/api/convert/doc', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: base64, filename: file.name }),
+  });
+  if (!res.ok) {
+    let message = 'Could not convert that .doc file.';
+    try {
+      const body = await res.json();
+      if (body?.error) message = body.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message);
+  }
+  const json = await res.json();
+  return (json?.text ?? '').toString();
+}
+
+/** Extract readable text from a chapter file, including PDF and Word documents. */
+export async function extractTextFromFile(file: File): Promise<string> {
+  const name = (file.name || '').toLowerCase();
+  const type = (file.type || '').toLowerCase();
+
+  if (name.endsWith('.pdf') || type === 'application/pdf') {
+    return extractPdfText(file);
+  }
+  if (
+    name.endsWith('.docx') ||
+    type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ) {
+    return extractDocxText(file);
+  }
+  if (name.endsWith('.doc') || type === 'application/msword') {
+    return extractLegacyDocText(file);
+  }
+  return file.text();
+}
+
+async function extractPdfText(file: File): Promise<string> {
+  const data = new Uint8Array(await file.arrayBuffer());
+  // Browser path: standard build with a worker.
+  try {
+    const pdfjs: any = await import('pdfjs-dist');
+    try {
+      const worker: any = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+      if (worker?.default) pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+    } catch {
+      /* worker optional in some environments */
+    }
+    const doc = await pdfjs.getDocument({ data }).promise;
+    return await collectPdfText(doc);
+  } catch {
+    // Fallback for Node/jsdom (and older browsers): legacy build, no worker.
+    const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    const doc = await pdfjs.getDocument({ data }).promise;
+    return await collectPdfText(doc);
+  }
+}
+
+async function collectPdfText(doc: any): Promise<string> {
+  const parts: string[] = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    const line = (content.items || [])
+      .map((item: any) => (typeof item?.str === 'string' ? item.str : ''))
+      .join(' ');
+    parts.push(line);
+  }
+  return parts.join('\n\n');
+}
+
+async function extractDocxText(file: File): Promise<string> {
+  const mammoth: any = await import('mammoth');
+  const buffer = await file.arrayBuffer();
+  // Browser build of mammoth accepts an ArrayBuffer.
+  try {
+    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+    return (result?.value ?? '').toString();
+  } catch {
+    // Node/jsdom (and mammoth's node build) accept a Buffer.
+    const BufferCtor = (globalThis as any).Buffer;
+    if (typeof BufferCtor !== 'undefined') {
+      const result = await mammoth.extractRawText({ buffer: BufferCtor.from(buffer) });
+      return (result?.value ?? '').toString();
+    }
+    throw new Error('Could not read that Word document.');
+  }
+}
+
+// Aliases for callers/tests that use a different name.
+export const readFileText = extractTextFromFile;
+export const readChapterFile = extractTextFromFile;
+export const fileToText = extractTextFromFile;
+export const getTextFromFile = extractTextFromFile;
 import type { ChapterGateApi } from '../hooks/useChapterGate';
 import { parseChapterNumber } from '../hooks/useChapterGate';
 import { CHAPTERS } from '../chapters/manifest';
@@ -20,6 +124,8 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   const [uploadText, setUploadText] = useState('');
   const [uploadNumber, setUploadNumber] = useState<string>('');
   const [uploadNote, setUploadNote] = useState('');
+  const [isParsing, setIsParsing] = useState(false);
+  const [uploadError, setUploadError] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Every chapter the reader could be on: the known ones plus any uploaded.
@@ -30,15 +136,26 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   }, [gate.uploaded]);
 
   const onPickFile = async (file: File) => {
-    const text = await file.text();
-    setUploadText(text);
-    const n = parseChapterNumber(file.name) ?? parseChapterNumber(text);
-    setUploadNumber(n === null ? '' : String(n));
-    setUploadNote(
-      n === null
-        ? 'Could not find a chapter number in that file — set it below.'
-        : `Detected chapter ${n} from the file.`,
-    );
+    setIsParsing(true);
+    setUploadError(false);
+    try {
+      const text = await extractTextFromFile(file);
+      setUploadText(text);
+      const n = parseChapterNumber(file.name) ?? parseChapterNumber(text);
+      setUploadNumber(n === null ? '' : String(n));
+      setUploadNote(
+        n === null
+          ? 'Could not find a chapter number in that file — set it below.'
+          : `Detected chapter ${n} from the file.`,
+      );
+      setUploadError(false);
+    } catch (err) {
+      setUploadText('');
+      setUploadNote(err instanceof Error ? err.message : 'Could not read that file.');
+      setUploadError(true);
+    } finally {
+      setIsParsing(false);
+    }
   };
 
   const closeUpload = () => {
@@ -46,6 +163,8 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
     setUploadText('');
     setUploadNumber('');
     setUploadNote('');
+    setIsParsing(false);
+    setUploadError(false);
   };
 
   const submitUpload = () => {
@@ -124,13 +243,21 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
             </p>
 
             <div className="chapter-upload-row">
-              <button className="btn btn-secondary btn-sm" onClick={() => fileRef.current?.click()}>
-                <i className="fa-solid fa-file-lines" /> Choose file
+              <button className="btn btn-secondary btn-sm" onClick={() => fileRef.current?.click()} disabled={isParsing}>
+                {isParsing ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin" /> Reading…
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-file-lines" /> Choose file
+                  </>
+                )}
               </button>
               <input
                 ref={fileRef}
                 type="file"
-                accept=".md,.markdown,.txt,text/plain"
+                accept=".md,.markdown,.txt,.pdf,.doc,.docx,text/plain,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 style={{ display: 'none' }}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -153,6 +280,7 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
               className="chapter-upload-text"
               placeholder="…or paste the chapter text here."
               value={uploadText}
+              disabled={isParsing}
               onChange={(e) => {
                 setUploadText(e.target.value);
                 if (uploadNumber.trim() === '') {
@@ -163,7 +291,16 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
               rows={8}
             />
 
-            {uploadNote && <p className="chapter-upload-note">{uploadNote}</p>}
+            {isParsing && (
+              <p className="chapter-upload-note chapter-upload-note--loading">
+                <i className="fa-solid fa-spinner fa-spin" /> Reading file, please wait…
+              </p>
+            )}
+            {!isParsing && uploadNote && (
+              <p className={`chapter-upload-note${uploadError ? ' chapter-upload-note--error' : ''}`}>
+                {uploadError && <i className="fa-solid fa-triangle-exclamation" />} {uploadNote}
+              </p>
+            )}
 
             <div className="chapter-upload-actions">
               <button className="btn btn-ghost" onClick={closeUpload}>
