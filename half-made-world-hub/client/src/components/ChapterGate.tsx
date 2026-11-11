@@ -243,6 +243,8 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
   const [registerCode, setRegisterCode] = useState('');
   const [registerChapter, setRegisterChapter] = useState('');
   const [registerNote, setRegisterNote] = useState('');
+  const [redeemCode, setRedeemCode] = useState('');
+  const [redeemNote, setRedeemNote] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Every chapter the reader could be on: the known ones plus any uploaded.
@@ -252,20 +254,21 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
     return [...nums].sort((a, b) => a - b);
   }, [gate.uploaded]);
 
-  const redeemCode = () => {
-    const code = codeInput.trim();
+  // Redeem code mode — standalone, its own page distinct from the upload modal
+  const handleRedeemCode = () => {
+    const code = redeemCode.trim().toLowerCase();
     if (!code) {
-      setCodeNote('Enter a code first.');
+      setRedeemNote('Enter a code first.');
       return;
     }
-    const ch = codes[code.toLowerCase()];
+    const ch = codes[code];
     if (ch === undefined) {
-      setCodeNote('Unknown code.');
+      setRedeemNote('Unknown code.');
       return;
     }
     gate.upload(ch, '');
-    setCodeNote(`Unlocked chapter ${ch}.`);
-    setCodeInput('');
+    setRedeemNote(`Unlocked chapter ${ch}.`);
+    setRedeemCode('');
   };
 
   const registerCodeFn = async () => {
@@ -414,9 +417,10 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
             <i className="fa-solid fa-file-arrow-up" /> Upload a chapter
           </button>
           {canRegister && (
-            <button className="btn btn-ghost btn-sm" onClick={() => setRegisterOpen(true)} title="Register a chapter code">
-              <i className="fa-solid fa-key" /> Register code
-            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setRegisterOpen(true)} title="Register a chapter code"><i className="fa-solid fa-key" /> Register code</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setRedeemOpen(true)} title="Redeem a chapter code">
+            <i className="fa-solid fa-magic" /> Redeem code
+          </button>
           )}
           {(gate.chapter >= 0 || Object.keys(gate.uploaded).length > 0) && (
             <button className="btn btn-ghost btn-sm" onClick={gate.reset} title="Forget every upload and lock everything">
@@ -498,19 +502,45 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
               </p>
             )}
 
-            <div className="chapter-code-row">
-              <input
-                className="chapter-code-input"
-                type="text"
-                placeholder="Have a chapter code?"
-                value={codeInput}
-                onChange={(e) => setCodeInput(e.target.value)}
-              />
-              <button className="btn btn-secondary btn-sm redeem-btn" onClick={redeemCode}>
-                Redeem
-              </button>
-            </div>
-            {codeNote && <p className="chapter-upload-note">{codeNote}</p>}
+            {/* Redeem code section — its own page, distinct from upload modal */}
+            {redeemOpen && (
+              <Modal onClose={() => setRedeemOpen(false)} wide>
+                <div className="chapter-upload">
+                  <h2 className="chapter-upload-title">Redeem a chapter code</h2>
+                  <p className="chapter-upload-blurb">
+                    Enter a chapter code to unlock the chapter tier and its manifest-gated entries.
+                  </p>
+                  <label className="chapter-upload-num">
+                    Code
+                    <input
+                      type="text"
+                      value={redeemCode}
+                      onChange={(e) => setRedeemCode(e.target.value)}
+                      placeholder="e.g. CH1-AAA"
+                    />
+                  </label>
+                  <label className="chapter-upload-num">
+                    Chapter
+                    <input
+                      type="number"
+                      min={0}
+                      value={0}
+                      onChange={(e) => {}}
+                      placeholder="auto-detected"
+                    />
+                  </label>
+                  {redeemNote && <p className="chapter-upload-note">{redeemNote}</p>}
+                  <div className="chapter-upload-actions">
+                    <button className="btn btn-ghost" onClick={() => setRedeemOpen(false)}>
+                      Close
+                    </button>
+                    <button className="btn btn-primary" onClick={handleRedeemCode}>
+                      Redeem
+                    </button>
+                  </div>
+                </div>
+              </Modal>
+            )}
 
             <div className="chapter-upload-actions">
               <button className="btn btn-ghost" onClick={closeUpload}>
