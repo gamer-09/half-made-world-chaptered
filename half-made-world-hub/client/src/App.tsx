@@ -95,11 +95,27 @@ export default function App() {
         const nameSet = new Set(
           (data.entries || []).map((e: any) => String(e.name || '').toLowerCase()),
         );
+        const stop = new Set([
+          'a', 'an', 'and', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by',
+          'can', 'could', 'did', 'do', 'does', 'for', 'from', 'had', 'has', 'have',
+          'he', 'her', 'hers', 'him', 'his', 'how', 'i', 'if', 'in', 'into', 'is',
+          'it', 'its', 'just', 'may', 'me', 'might', 'my', 'no', 'not', 'of', 'on',
+          'or', 'our', 'ours', 'she', 'so', 'that', 'the', 'their', 'theirs', 'them',
+          'then', 'there', 'these', 'they', 'this', 'those', 'through', 'to', 'too',
+          'up', 'us', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who',
+          'whom', 'why', 'will', 'with', 'would', 'you', 'your', 'yours', 'chapter',
+        ]);
         const found = new Set<string>();
         const re = /\b([A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)+)\b/g;
         let m: RegExpExecArray | null;
         while ((m = re.exec(texts)) !== null) {
           const candidate = m[1].trim();
+          const words = candidate.toLowerCase().split(/\s+/);
+          // Skip common/talking phrases like "As I" or "Through The".
+          if (words.every((w) => stop.has(w))) continue;
+          if (words.some((w) => stop.has(w) && words.length === 2 && stop.has(words[0]) && stop.has(words[1])))
+            continue;
+          if (candidate.length < 4) continue;
           if (!nameSet.has(candidate.toLowerCase())) found.add(candidate);
         }
         if (!cancelled) setMissingMentions([...found].sort());
