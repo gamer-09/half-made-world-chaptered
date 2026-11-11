@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import mammoth from 'mammoth';
 
-if (typeof window !== 'undefined') {
-  (pdfjsLib as any).GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+// pdfjs and mammoth are loaded lazily. Importing pdfjs at module scope pulls in
+// modern globals (Iterator, DOMMatrix) that older Node/jsdom test runners don't
+// define, which crashed the whole suite before any test could run.
+async function loadBrowserPdfJs(): Promise<any> {
+  const [pdfjs, worker] = await Promise.all([
+    import('pdfjs-dist'),
+    import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+  ]);
+  const lib: any = pdfjs;
+  const workerUrl = (worker as any).default ?? worker;
+  lib.GlobalWorkerOptions.workerSrc = workerUrl;
+  return lib;
 }
+
 
 async function extractLegacyDocText(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
@@ -100,12 +108,16 @@ async function extractPdfText(file: File): Promise<string> {
   const data = new Uint8Array(await file.arrayBuffer());
   // Browser path: standard build with a worker.
   try {
-    const doc = await (pdfjsLib as any).getDocument({ data }).promise;
+    const pdfjs = await loadBrowserPdfJs();
+    const doc = await pdfjs.getDocument({ data }).promise;
     return await collectPdfText(doc);
   } catch {
     // Fallback for Node/jsdom (and older browsers): legacy build, no worker.
-    const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    const doc = await pdfjs.getDocument({ data }).promise;
+    // Read the file again because pdfjs may detach the first buffer.
+    const retryData = new Uint8Array(await file.arrayBuffer());
+    const loaded: any = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    const pdfjs = loaded.default ?? loaded;
+    const doc = await pdfjs.getDocument({ data: retryData }).promise;
     return await collectPdfText(doc);
   }
 }
@@ -143,15 +155,17 @@ async function collectPdfText(doc: any): Promise<string> {
 
 async function extractDocxText(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
+  const loaded: any = await import('mammoth');
+  const mammoth: any = loaded.default ?? loaded;
   // Browser build of mammoth accepts an ArrayBuffer.
   try {
-    const result = await (mammoth as any).extractRawText({ arrayBuffer: buffer });
+    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
     return (result?.value ?? '').toString();
   } catch {
     // Node/jsdom (and mammoth's node build) accept a Buffer.
     const BufferCtor = (globalThis as any).Buffer;
     if (typeof BufferCtor !== 'undefined') {
-      const result = await (mammoth as any).extractRawText({ buffer: BufferCtor.from(buffer) });
+      const result = await mammoth.extractRawText({ buffer: BufferCtor.from(buffer) });
       return (result?.value ?? '').toString();
     }
     throw new Error('Could not read that Word document.');
