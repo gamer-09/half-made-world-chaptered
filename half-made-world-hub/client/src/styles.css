@@ -3345,6 +3345,18 @@ select.input {
   to { background: var(--panel-2); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .redeem-btn.redeeming {
+    animation: none;
+  }
+  .redeem-btn.redeeming + .chapter-code-input {
+    animation: none;
+  }
+  .chapter-code-input:focus {
+    transition: none;
+  }
+}
+
 .chapter-code-row { display: flex; gap: var(--sp-2); align-items: center; }
 
 /* ============ Locked details ============ */
