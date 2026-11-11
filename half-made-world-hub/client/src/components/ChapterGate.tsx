@@ -72,10 +72,28 @@ async function collectPdfText(doc: any): Promise<string> {
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
-    const line = (content.items || [])
-      .map((item: any) => (typeof item?.str === 'string' ? item.str : ''))
-      .join(' ');
-    parts.push(line);
+    const items = (content.items || []).filter((it: any) => typeof it?.str === 'string');
+    // Reconstruct line breaks from item positions so the extracted text keeps
+    // the document's original layout instead of collapsing everything.
+    const lines: { y: number; x: number; str: string }[] = items.map((it: any) => ({
+      y: Math.round(it.transform?.[5] ?? 0),
+      x: Math.round(it.transform?.[4] ?? 0),
+      str: it.str,
+    }));
+    lines.sort((a, b) => (b.y - a.y) || (a.x - b.x));
+    const out: string[] = [];
+    let prevY: number | null = null;
+    let current = '';
+    for (const it of lines) {
+      if (prevY !== null && Math.abs(it.y - prevY) > 3) {
+        if (current.trim()) out.push(current.trim());
+        current = '';
+      }
+      current += (current ? ' ' : '') + it.str;
+      prevY = it.y;
+    }
+    if (current.trim()) out.push(current.trim());
+    parts.push(out.join('\n'));
   }
   return parts.join('\n\n');
 }
