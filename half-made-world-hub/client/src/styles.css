@@ -3137,21 +3137,14 @@ select.input {
   background: var(--panel-2);
   border: 1px solid var(--line);
   border-radius: 7px;
-  cursor: pointer;
+  cursor: default;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 
-.chapter-chip:hover:not(:disabled) { border-color: var(--line-strong); color: var(--text); }
-.chapter-chip:disabled { cursor: default; opacity: 0.85; }
 .chapter-chip.on {
   color: var(--brass);
   background: var(--brass-dim);
   border-color: rgba(200, 168, 118, 0.4);
-}
-.chapter-chip.uploaded .chapter-chip-num::after {
-  content: '·';
-  margin-left: 2px;
-  color: var(--muted-2);
 }
 .chapter-chip i { font-size: 9px; opacity: 0.7; }
 .chapter-chip-num { letter-spacing: 0.02em; }

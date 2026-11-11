@@ -1,18 +1,18 @@
-// Chapter gate — turns the full archive into the slice a reader has earned.
+// Chapter gate — turns the full archive into the slice a reader has uploaded.
 //
-// Everything is computed client-side from the bundled snapshot, so the same
-// gate works in the dev server and in the view-only GitHub Pages build.
+// Nothing is revealed up front. The only way in is to upload a chapter: its
+// prose is scanned for entry names, and the curated manifest records what a
+// mention alone should not leak. Everything is computed client-side from the
+// bundled snapshot, so the same gate works in the dev server and in the
+// view-only GitHub Pages build.
 import type { Entry, Relationship, StoryLink } from '../types';
 import { ENTRY_RULES, LOCKED, type EntryRule } from './manifest';
-import { BUNDLED_TEXT } from './chapterText';
 
 export interface GateConfig {
-  /** Highest unlocked chapter, inclusive. Infinity means "reveal everything". */
+  /** Highest uploaded chapter, inclusive. -1 means nothing uploaded yet. */
   chapter: number;
-  /** Extra chapter prose keyed by chapter number (from uploads/paste). */
+  /** Chapter prose the reader supplied, keyed by chapter number. */
   uploaded: Record<number, string>;
-  /** When true the gate is bypassed entirely (author mode). */
-  off?: boolean;
 }
 
 export interface GateStats {
@@ -50,25 +50,32 @@ interface ChapterText {
   text: string;
 }
 
-/** Every chapter text the reader has unlocked, bundled + uploaded. */
+/** Every chapter text the reader has uploaded, up to the highest chapter. */
 export function unlockedTexts(config: GateConfig): ChapterText[] {
   const out: ChapterText[] = [];
-  for (const [k, text] of Object.entries(BUNDLED_TEXT)) out.push({ n: Number(k), text });
   for (const [k, text] of Object.entries(config.uploaded || {})) {
-    if (text && text.trim()) out.push({ n: Number(k), text });
+    const n = Number(k);
+    if (!Number.isFinite(n) || n > config.chapter) continue;
+    if (text && text.trim()) out.push({ n, text });
   }
-  return out.filter((c) => c.n <= config.chapter).sort((a, b) => a.n - b.n);
+  return out.sort((a, b) => a.n - b.n);
+}
+
+/** The chapter an entry first becomes visible, or Infinity if never. */
+function revealAt(name: string, texts: ChapterText[]): number {
+  const rule = ENTRY_RULES[name];
+  if (rule && typeof rule.at === 'number') return rule.at;
+  const candidates = [name, ...(rule?.alias ?? [])];
+  let earliest = Infinity;
+  for (const { n, text } of texts) {
+    if (candidates.some((candidate) => mentions(text, candidate))) earliest = Math.min(earliest, n);
+  }
+  return earliest;
 }
 
 /** The chapter an entry first becomes visible, or Infinity if never. */
 export function entryRevealAt(name: string, config: GateConfig): number {
-  const rule = ENTRY_RULES[name];
-  if (rule) return rule.at;
-  let earliest = Infinity;
-  for (const { n, text } of unlockedTexts(config)) {
-    if (mentions(text, name)) earliest = Math.min(earliest, n);
-  }
-  return earliest;
+  return revealAt(name, unlockedTexts(config));
 }
 
 function fieldRevealAt(rule: EntryRule | undefined, entryAt: number, label: string): number {
@@ -82,8 +89,8 @@ interface GateEntryResult {
   hiddenFields: number;
 }
 
-function gateEntry(entry: Entry, config: GateConfig): GateEntryResult {
-  const at = entryRevealAt(entry.name, config);
+function gateEntry(entry: Entry, config: GateConfig, texts: ChapterText[]): GateEntryResult {
+  const at = revealAt(entry.name, texts);
   if (config.chapter < at) return { entry: null, hiddenFields: 0 };
 
   const rule = ENTRY_RULES[entry.name];
@@ -137,28 +144,14 @@ export function applyGate(
 ): GatedArchive {
   const totalEntries = data.entries.length;
   const totalCategories = new Set(data.entries.map((e) => e.category)).size;
-
-  if (config.off || config.chapter === Infinity) {
-    return {
-      ...data,
-      stats: {
-        chapter: config.chapter,
-        totalEntries,
-        visibleEntries: totalEntries,
-        lockedEntries: 0,
-        hiddenFields: 0,
-        visibleCategories: totalCategories,
-        totalCategories,
-      },
-    };
-  }
+  const texts = unlockedTexts(config);
 
   const entries: Entry[] = [];
   const hiddenLower: string[] = [];
   let hiddenFields = 0;
 
   for (const entry of data.entries) {
-    const { entry: gated, hiddenFields: hf } = gateEntry(entry, config);
+    const { entry: gated, hiddenFields: hf } = gateEntry(entry, config, texts);
     if (gated) {
       entries.push(gated);
       hiddenFields += hf;
@@ -167,7 +160,6 @@ export function applyGate(
     }
   }
 
-  const visible = new Set(entries.map((e) => e.name));
   const endpointHidden = makeEndpointHidden(hiddenLower);
   const keep = (a: string, b: string) => !endpointHidden(a) && !endpointHidden(b);
 
@@ -188,11 +180,6 @@ export function applyGate(
       totalCategories,
     },
   };
-}
-
-/** The chapter an entry is revealed in, for locked teasers in the UI. */
-export function unlockChapterFor(name: string, config: GateConfig): number {
-  return entryRevealAt(name, config);
 }
 
 // --- Active gate ----------------------------------------------------------

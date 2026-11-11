@@ -8,20 +8,21 @@ import { Modal } from './Modal';
 interface ChapterGateProps {
   gate: ChapterGateApi;
   stats: GateStats | null;
+  uploadOpen: boolean;
+  onUploadOpenChange: (open: boolean) => void;
 }
 
 function chapterTitle(n: number): string {
   return CHAPTERS.find((c) => c.number === n)?.title ?? `Chapter ${n}`;
 }
 
-export function ChapterGate({ gate, stats }: ChapterGateProps) {
-  const [uploadOpen, setUploadOpen] = useState(false);
+export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: ChapterGateProps) {
   const [uploadText, setUploadText] = useState('');
   const [uploadNumber, setUploadNumber] = useState<string>('');
   const [uploadNote, setUploadNote] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Every chapter the reader could be on: the bundled ones plus any uploaded.
+  // Every chapter the reader could be on: the known ones plus any uploaded.
   const allChapters = useMemo(() => {
     const nums = new Set<number>(CHAPTERS.map((c) => c.number));
     for (const k of Object.keys(gate.uploaded)) nums.add(Number(k));
@@ -40,84 +41,86 @@ export function ChapterGate({ gate, stats }: ChapterGateProps) {
     );
   };
 
+  const closeUpload = () => {
+    onUploadOpenChange(false);
+    setUploadText('');
+    setUploadNumber('');
+    setUploadNote('');
+  };
+
   const submitUpload = () => {
     const n = Number(uploadNumber);
     if (!Number.isFinite(n) || n < 0 || uploadNumber.trim() === '') {
       setUploadNote('Enter a chapter number first.');
       return;
     }
+    if (!uploadText.trim()) {
+      setUploadNote('Add the chapter text — paste it or choose a file.');
+      return;
+    }
     gate.upload(n, uploadText);
-    setUploadOpen(false);
-    setUploadText('');
-    setUploadNumber('');
-    setUploadNote('');
+    closeUpload();
   };
 
-  const current = gate.off ? 'Author mode' : gate.chapter < 0 ? 'No chapter unlocked' : `Chapter ${gate.chapter}`;
+  const current =
+    gate.chapter < 0 ? 'No chapter unlocked' : `Chapter ${gate.chapter}`;
 
   return (
     <>
       <div className="chapter-gate">
         <div className="chapter-gate-status">
           <span className="chapter-gate-lock" aria-hidden="true">
-            <i className={gate.off ? 'fa-solid fa-unlock' : 'fa-solid fa-lock'} />
+            <i className="fa-solid fa-lock" />
           </span>
           <span className="chapter-gate-current">{current}</span>
-          {!gate.off && gate.chapter >= 0 && (
+          {gate.chapter >= 0 && (
             <span className="chapter-gate-title">{chapterTitle(gate.chapter)}</span>
           )}
         </div>
 
-        <div className="chapter-gate-chapters">
-          {allChapters.map((n) => {
-            const unlocked = gate.off || gate.chapter >= n;
-            const bundled = CHAPTERS.some((c) => c.number === n);
-            return (
-              <button
-                key={n}
-                className={`chapter-chip${unlocked ? ' on' : ''}${!bundled ? ' uploaded' : ''}`}
-                onClick={() => gate.unlock(n)}
-                title={bundled ? chapterTitle(n) : `Uploaded chapter ${n}`}
-                disabled={gate.off}
-              >
-                {!unlocked && <i className="fa-solid fa-lock" aria-hidden="true" />}
-                <span className="chapter-chip-num">Ch {n}</span>
-              </button>
-            );
-          })}
-        </div>
+        {allChapters.length > 0 && (
+          <div className="chapter-gate-chapters" aria-label="Chapter progress">
+            {allChapters.map((n) => {
+              const unlocked = gate.chapter >= n;
+              return (
+                <span
+                  key={n}
+                  className={`chapter-chip${unlocked ? ' on' : ''}`}
+                  title={unlocked ? chapterTitle(n) : `Chapter ${n} — not uploaded yet`}
+                >
+                  {!unlocked && <i className="fa-solid fa-lock" aria-hidden="true" />}
+                  <span className="chapter-chip-num">Ch {n}</span>
+                </span>
+              );
+            })}
+          </div>
+        )}
 
         <div className="chapter-gate-actions">
-          {stats && !gate.off && (
+          {stats && gate.chapter >= 0 && (
             <span className="chapter-gate-stats" title="Entries you can see now vs. still hidden">
               {stats.visibleEntries.toLocaleString()} visible · {stats.lockedEntries.toLocaleString()} locked
             </span>
           )}
-          <button className="btn btn-ghost btn-sm" onClick={() => setUploadOpen(true)} title="Paste or upload a chapter">
-            <i className="fa-solid fa-file-arrow-up" /> Upload
+          <button className="btn btn-ghost btn-sm" onClick={() => onUploadOpenChange(true)} title="Paste or upload a chapter">
+            <i className="fa-solid fa-file-arrow-up" /> Upload a chapter
           </button>
-          {gate.off ? (
-            <button className="btn btn-ghost btn-sm" onClick={gate.enableGate} title="Turn the chapter gate back on">
-              <i className="fa-solid fa-lock" /> Re-enable gate
-            </button>
-          ) : (
-            <button className="btn btn-ghost btn-sm" onClick={gate.revealAll} title="Author view: reveal the whole archive">
-              <i className="fa-solid fa-book-open" /> Reveal all
+          {(gate.chapter >= 0 || Object.keys(gate.uploaded).length > 0) && (
+            <button className="btn btn-ghost btn-sm" onClick={gate.reset} title="Forget every upload and lock everything">
+              <i className="fa-solid fa-rotate-left" /> Reset
             </button>
           )}
-          <button className="btn btn-ghost btn-sm" onClick={gate.reset} title="Lock everything again">
-            <i className="fa-solid fa-rotate-left" /> Reset
-          </button>
         </div>
       </div>
 
       {uploadOpen && (
-        <Modal onClose={() => setUploadOpen(false)} wide>
+        <Modal onClose={closeUpload} wide>
           <div className="chapter-upload">
             <h2 className="chapter-upload-title">Upload a chapter</h2>
             <p className="chapter-upload-blurb">
-              Unlocking a chapter releases everything that chapter and the ones before it put on the page.
-              Details the story hasn’t reached yet stay locked.
+              Uploading a chapter is the only way to open the archive. Its text is read for the
+              entries and names it puts on the page — those are revealed, and everything the story
+              hasn’t reached yet stays locked.
             </p>
 
             <div className="chapter-upload-row">
@@ -163,7 +166,7 @@ export function ChapterGate({ gate, stats }: ChapterGateProps) {
             {uploadNote && <p className="chapter-upload-note">{uploadNote}</p>}
 
             <div className="chapter-upload-actions">
-              <button className="btn btn-ghost" onClick={() => setUploadOpen(false)}>
+              <button className="btn btn-ghost" onClick={closeUpload}>
                 Cancel
               </button>
               <button className="btn btn-primary" onClick={submitUpload}>

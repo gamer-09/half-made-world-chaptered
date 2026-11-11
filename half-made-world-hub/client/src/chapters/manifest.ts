@@ -25,12 +25,10 @@ export interface ChapterMeta {
   number: number;
   title: string;
   blurb: string;
-  /** File under ./text/ that carries the bundled prose, or null if none. */
-  file: string | null;
 }
 
 export interface EntryRule {
-  at: number;
+  at?: number;
   subtitle?: number;
   desc?: number;
   fields?: Record<string, number>;
@@ -43,25 +41,21 @@ export const CHAPTERS: ChapterMeta[] = [
     number: 0,
     title: 'The Making of the World',
     blurb: 'The prologue: the pulse, the Aelthar, the tearing of the world, and the boy it was all turning toward.',
-    file: 'chapter-0.md',
   },
   {
     number: 1,
     title: 'The Awakening',
     blurb: 'Jaiden’s awakening day — the altar, the Guardian, and Bella’s impossible light.',
-    file: 'chapter-1.md',
   },
   {
     number: 2,
     title: 'The Reading',
     blurb: 'Jaiden steps into the ring, and the altar finds two signatures in one body.',
-    file: 'chapter-2.md',
   },
   {
     number: 3,
     title: 'The First Day',
     blurb: 'Veyn and Ren, the Wall, Rune Stars — and the quiet knowledge of what Jaiden is.',
-    file: 'chapter-3.md',
   },
 ];
 

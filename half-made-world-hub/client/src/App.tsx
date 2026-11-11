@@ -76,9 +76,9 @@ export default function App() {
   // sliced — otherwise the full archive would flash before the reload.
   setActiveGate(gate.config);
   const archive = useArchive();
-  // The chapter gate is the reader's mode; editing is only possible when the
-  // gate is off (author mode) and we are in a dev build.
-  const canEdit = import.meta.env.DEV && gate.off;
+  // The reader build is view-only. Editing is a local authoring tool, so it is
+  // only possible in a dev build; the chapter gate is orthogonal to it.
+  const canEdit = import.meta.env.DEV;
   const entries = archive.entries;
   const relationships = archive.relationships;
   const storyLinks = archive.storyLinks;
@@ -94,6 +94,7 @@ export default function App() {
   const [editingRel, setEditingRel] = useState<Relationship | null>(null);
   const [linkFormOpen, setLinkFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<StoryLink | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [toast, setToast] = useState('');
   const toastTimer = useRef<number | undefined>(undefined);
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -600,7 +601,7 @@ export default function App() {
                 <span className="main-count">{filtered.length}</span>
               )}
               {!canEdit && !isMapView && !isWebView && !isBlocksView && (
-                <span className="main-mode">{gate.off ? 'view-only build' : 'chapter-gated'}</span>
+                <span className="main-mode">chapter-gated</span>
               )}
             </h2>
             <p className="main-sub">
@@ -662,7 +663,12 @@ export default function App() {
           </div>
         </header>
 
-        <ChapterGate gate={gate} stats={archive.gateStats} />
+        <ChapterGate
+          gate={gate}
+          stats={archive.gateStats}
+          uploadOpen={uploadOpen}
+          onUploadOpenChange={setUploadOpen}
+        />
 
         <div className={`view-transition${isBlocksView || isPlanningView || isCanonView || isWeaveView || isFlavorView ? ' view-fill' : ''}`} key={viewKey}>
         {loading ? (
@@ -678,15 +684,16 @@ export default function App() {
               Retry
             </button>
           </div>
-        ) : !gate.off && gate.chapter < 0 ? (
+        ) : gate.chapter < 0 ? (
           <div className="empty-state">
             <p className="empty-title">The archive is sealed.</p>
             <p className="empty-text">
-              Unlock a chapter to reveal what the story has reached so far. Entries and details
-              the chapters haven’t reached yet stay locked until you get there.
+              Upload a chapter to open it. Its text is read for the entries and names it puts on
+              the page — those are revealed, and everything the story hasn’t reached yet stays
+              locked.
             </p>
-            <button className="btn btn-primary" onClick={() => gate.unlock(0)}>
-              Start with Chapter 0
+            <button className="btn btn-primary" onClick={() => setUploadOpen(true)}>
+              <i className="fa-solid fa-file-arrow-up" /> Upload a chapter
             </button>
           </div>
         ) : isFlavorView ? (

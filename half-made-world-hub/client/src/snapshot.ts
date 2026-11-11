@@ -1,5 +1,5 @@
 import type { CategoryInfo, Entry, Relationship, StoryLink } from './types';
-import { applyGate, getActiveGate, type GateStats } from './chapters/gate';
+import { applyGate, getActiveGate, EMPTY_GATE, type GateStats } from './chapters/gate';
 
 export type SnapshotData = {
   entries: Entry[];
@@ -19,12 +19,6 @@ export function invalidateSnapshot() {
 /** Gate statistics for the slice currently loaded (null before first load). */
 export function getGateStats(): GateStats | null {
   return cachedStats;
-}
-
-/** The full, ungated archive — used by author mode and exports. */
-let rawCached: SnapshotData | null = null;
-export function getRawSnapshot(): SnapshotData | null {
-  return rawCached;
 }
 
 export async function loadSnapshot(): Promise<SnapshotData> {
@@ -57,11 +51,10 @@ export async function loadSnapshot(): Promise<SnapshotData> {
     raw = data;
   }
 
-  rawCached = raw;
-
-  // Apply the chapter gate (no-op when it is switched off).
+  // Slice the archive through the active gate. With nothing uploaded the gate
+  // is empty, so the archive ships sealed and the reader sees no entries.
   const gate = getActiveGate();
-  const gated = applyGate(raw, gate ?? { chapter: Infinity, uploaded: {}, off: true });
+  const gated = applyGate(raw, gate ?? EMPTY_GATE);
   cachedStats = gated.stats;
   cached = { entries: gated.entries, relationships: gated.relationships, storyLinks: gated.storyLinks };
   return cached;

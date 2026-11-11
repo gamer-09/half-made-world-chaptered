@@ -1,20 +1,17 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { GateConfig } from '../chapters/gate';
-import { CHAPTERS } from '../chapters/manifest';
 
 const STORAGE_KEY = 'hmw-chapter-gate';
 
 export interface ChapterGateState {
-  /** Highest unlocked chapter, inclusive. -1 means nothing unlocked yet. */
+  /** Highest uploaded chapter, inclusive. -1 means nothing uploaded yet. */
   chapter: number;
-  /** Extra chapter prose the reader supplied, keyed by chapter number. */
+  /** Chapter prose the reader supplied, keyed by chapter number. */
   uploaded: Record<number, string>;
-  /** Author mode: bypass the gate and show the whole archive. */
-  off: boolean;
 }
 
 function defaultState(): ChapterGateState {
-  return { chapter: 0, uploaded: {}, off: false };
+  return { chapter: -1, uploaded: {} };
 }
 
 function loadState(): ChapterGateState {
@@ -23,9 +20,8 @@ function loadState(): ChapterGateState {
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw) as Partial<ChapterGateState>;
     return {
-      chapter: typeof parsed.chapter === 'number' ? parsed.chapter : 0,
+      chapter: typeof parsed.chapter === 'number' ? parsed.chapter : -1,
       uploaded: parsed.uploaded && typeof parsed.uploaded === 'object' ? parsed.uploaded : {},
-      off: Boolean(parsed.off),
     };
   } catch {
     return defaultState();
@@ -58,12 +54,10 @@ export function parseChapterNumber(input: string): number | null {
 
 export interface ChapterGateApi extends ChapterGateState {
   config: GateConfig;
-  unlock: (chapter: number) => void;
+  /** Upload a chapter's prose. This is the only way to reveal anything. */
   upload: (chapter: number, text: string) => void;
+  /** Lock everything again and forget every upload. */
   reset: () => void;
-  revealAll: () => void;
-  enableGate: () => void;
-  maxBundledChapter: number;
 }
 
 export function useChapterGate(): ChapterGateApi {
@@ -74,34 +68,21 @@ export function useChapterGate(): ChapterGateApi {
     setState(next);
   }, []);
 
-  const unlock = useCallback(
-    (chapter: number) => update({ ...state, chapter: Math.max(state.chapter, chapter), off: false }),
-    [state, update],
-  );
-
   const upload = useCallback(
     (chapter: number, text: string) =>
       update({
         chapter: Math.max(state.chapter, chapter),
         uploaded: { ...state.uploaded, [chapter]: text },
-        off: false,
       }),
     [state, update],
   );
 
-  const reset = useCallback(() => update({ chapter: -1, uploaded: {}, off: false }), [update]);
-  const revealAll = useCallback(() => update({ ...state, off: true }), [state, update]);
-  const enableGate = useCallback(() => update({ ...state, off: false }), [state, update]);
+  const reset = useCallback(() => update({ chapter: -1, uploaded: {} }), [update]);
 
   const config = useMemo<GateConfig>(
-    () => ({ chapter: state.off ? Infinity : state.chapter, uploaded: state.uploaded, off: state.off }),
+    () => ({ chapter: state.chapter, uploaded: state.uploaded }),
     [state],
   );
 
-  const maxBundledChapter = useMemo(
-    () => CHAPTERS.reduce((m, c) => Math.max(m, c.number), 0),
-    [],
-  );
-
-  return { ...state, config, unlock, upload, reset, revealAll, enableGate, maxBundledChapter };
+  return { ...state, config, upload, reset };
 }

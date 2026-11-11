@@ -23,6 +23,15 @@ function relationship(source: string, target: string): Relationship {
 const noLinks = { relationships: [] as Relationship[], storyLinks: [] };
 
 describe('chapter gate', () => {
+  it('reveals nothing before anything is uploaded', () => {
+    const data = { entries: [entry('Aldermere'), entry('The World Core')], ...noLinks };
+    const gated = applyGate(data, { chapter: -1, uploaded: {} });
+
+    expect(gated.entries).toHaveLength(0);
+    expect(gated.stats.visibleEntries).toBe(0);
+    expect(gated.stats.lockedEntries).toBe(2);
+  });
+
   it('hides a curated entry until its chapter arrives', () => {
     const data = { entries: [entry('Jaiden Marlock', [{ label: 'Appearance', value: 'tall' }])], ...noLinks };
     const gated = applyGate(data, { chapter: 0, uploaded: {} });
@@ -56,17 +65,7 @@ describe('chapter gate', () => {
     expect(e.lockedFieldCount).toBe(1);
   });
 
-  it('reveals everything when the gate is off', () => {
-    const data = { entries: [entry('Jaiden Marlock', [{ label: 'Character Arc', value: 'x' }])], ...noLinks };
-    const gated = applyGate(data, { chapter: Infinity, uploaded: {}, off: true });
-
-    expect(gated.entries).toHaveLength(1);
-    expect(gated.entries[0].lockedSubtitle).toBeUndefined();
-    expect(gated.entries[0].lockedDescription).toBeUndefined();
-    expect(gated.entries[0].fields[0].locked).toBeUndefined();
-  });
-
-  it('auto-reveals an uncurated entry named in an unlocked chapter', () => {
+  it('reveals an uncurated entry named in an unlocked chapter', () => {
     const config: GateConfig = { chapter: 5, uploaded: { 5: 'They whispered of Zorblax the Unnamed.' } };
 
     expect(entryRevealAt('Zorblax the Unnamed', { chapter: 4, uploaded: {} })).toBe(Infinity);
@@ -74,6 +73,14 @@ describe('chapter gate', () => {
 
     expect(gated.entries).toHaveLength(1);
     expect(gated.entries[0].unlocksChapter).toBe(5);
+  });
+
+  it('keeps a held-back curated entry locked even when a chapter names it', () => {
+    const config: GateConfig = { chapter: 5, uploaded: { 5: 'They spoke of Lisa at the gate.' } };
+    const gated = applyGate({ entries: [entry('Lisa')], ...noLinks }, config);
+
+    expect(gated.entries).toHaveLength(0);
+    expect(gated.stats.lockedEntries).toBe(1);
   });
 
   it('drops links that touch a still-hidden entry', () => {
