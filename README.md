@@ -78,11 +78,12 @@ chapters you've unlocked actually put on the page.
 - **Chapter codes.** A reader with no chapter file can enter a code instead; every chapter ends
   with one. Codes live in `server/data/chapter-codes.json` and are copied into the bundled
   `snapshot.json`. Locally, the *Register code* button opens a manager that can add, edit, and
-  delete codes. Registering one saves the code, regenerates the snapshot, then commits just those
-  two files and pushes, so the deployed site can redeem it. Set
-  `AUTO_PUSH_CHAPTER_CODES=false` to save without pushing. The push is skipped (with a warning)
-  while `server/data/world.json`, `relationships.json`, or `story-links.json` have uncommitted
-  changes, since the snapshot would publish those edits too.
+  delete codes. There is one code per chapter, and a code can't be registered twice — the form
+  says so and refuses the save. Registering a code saves it, regenerates the snapshot, then commits
+  just those two files and pushes, so the deployed site can redeem it; editing or deleting a code
+  pushes the same way. Set `AUTO_PUSH_CHAPTER_CODES=false` to save without pushing. The push is
+  skipped (with a warning) while `server/data/world.json`, `relationships.json`, or
+  `story-links.json` have uncommitted changes, since the snapshot would publish those edits too.
 - **Author mode.** *Reveal all* bypasses the gate and restores the full archive — and editing —
   for local development. *Re-enable gate* and *Reset* lock it back down. Your chapter progress is
   remembered in `localStorage`.

@@ -2917,7 +2917,8 @@ select.input {
 /* ============ Redeem field / error feedback ============ */
 /* Every chapter closes with its unlock code, so tell readers where to look
    before they start hunting for one. */
-.chapter-redeem-hint {
+.chapter-redeem-hint,
+.chapter-register-hint {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2932,7 +2933,8 @@ select.input {
   color: var(--muted);
 }
 
-.chapter-redeem-hint i {
+.chapter-redeem-hint i,
+.chapter-register-hint i {
   flex: none;
   font-size: 11px;
   color: var(--brass);

@@ -266,6 +266,20 @@ makeLinkRoutes('relationships', loadRelationships, saveRelationships, 'Relations
 makeLinkRoutes('story-links', loadStoryLinks, saveStoryLinks, 'Story link');
 
 // --- Chapter codes --------------------------------------------------------
+// The map is keyed by code, and each chapter is meant to have a single code.
+// Returns the conflict to report (409), or null when the pair is free.
+// `ignoreKey` is the code being edited, which may keep its own chapter.
+function chapterCodeConflict(map, key, chapter, ignoreKey = null) {
+  if (key !== ignoreKey && key in map) {
+    return { field: 'code', error: `Code “${key}” is already registered.` };
+  }
+  const taken = Object.entries(map).find(([k, c]) => c === chapter && k !== ignoreKey);
+  if (taken) {
+    return { field: 'chapter', error: `Chapter ${chapter} already has a code (${taken[0]}).` };
+  }
+  return null;
+}
+
 app.get('/api/chapter-codes', (req, res) => {
   res.json(loadChapterCodes());
 });
@@ -281,6 +295,8 @@ app.post('/api/chapter-codes', (req, res) => {
   }
   const map = loadChapterCodes();
   const key = String(code).trim().toLowerCase();
+  const conflict = chapterCodeConflict(map, key, ch);
+  if (conflict) return res.status(409).json(conflict);
   map[key] = ch;
   saveChapterCodes(map, { action: 'register', code: key });
   res.status(201).json({ ok: true, code: String(code).trim(), chapter: ch });
@@ -300,9 +316,8 @@ app.put('/api/chapter-codes/:code', (req, res) => {
     return res.status(400).json({ error: 'A chapter number is required' });
   }
   const nextKey = String(code).trim().toLowerCase();
-  if (nextKey !== key && nextKey in map) {
-    return res.status(409).json({ error: 'That code already exists' });
-  }
+  const conflict = chapterCodeConflict(map, nextKey, ch, key);
+  if (conflict) return res.status(409).json(conflict);
   if (nextKey !== key) delete map[key];
   map[nextKey] = ch;
   saveChapterCodes(map, { action: 'update', code: nextKey });
@@ -2534,4 +2549,4 @@ if (require.main === module) {
 }
 
 // Exported for tests/debug tooling (requiring this module does not start the server).
-module.exports = { extractKeywords, broadSearch, buildArchiveContext, buildArchiveIndex, parseRetryAfterSeconds, durationToSeconds, parseAiJson, collectCategoryStats, resolvePlanningCategory, pickPlanningCategory, buildPlanningContext, normalizePlan, normalizeTriage, splitList, providerLabel, makeProvider, buildProviderChain, askHttp };
+module.exports = { extractKeywords, broadSearch, buildArchiveContext, buildArchiveIndex, parseRetryAfterSeconds, durationToSeconds, parseAiJson, collectCategoryStats, resolvePlanningCategory, pickPlanningCategory, buildPlanningContext, normalizePlan, normalizeTriage, splitList, providerLabel, makeProvider, buildProviderChain, askHttp, chapterCodeConflict };

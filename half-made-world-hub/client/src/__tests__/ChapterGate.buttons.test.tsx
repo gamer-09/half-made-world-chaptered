@@ -17,7 +17,7 @@ function makeGate(overrides: Partial<ChapterGateApi> = {}): ChapterGateApi {
 }
 
 function stubFetch(codes: Record<string, number> = {}) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
     const url = String(input);
     if (url.includes('/api/chapter-codes')) {
       return { ok: true, json: async () => codes } as Response;
@@ -211,6 +211,65 @@ describe('ChapterGate action buttons', () => {
     expect(screen.getByText('CH4-SECRET')).toBeTruthy();
     expect(document.querySelectorAll('.chapter-forge-spark').length).toBe(10);
     expect(document.querySelector('.chapter-forge-key')).toBeTruthy();
+  });
+
+  it('turns away a code that is already registered', async () => {
+    const fetchMock = stubFetch({ 'ch1-aaa': 1 });
+    render(<ChapterGate gate={makeGate()} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Register code/i }));
+    await screen.findByText('ch1-aaa');
+    fireEvent.change(screen.getByLabelText(/Code/i), { target: { value: 'CH1-AAA' } });
+    fireEvent.change(screen.getByLabelText('Chapter'), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Register$/i }));
+
+    expect(screen.getByRole('alert').textContent).toMatch(/already registered/i);
+    expect(screen.getByLabelText(/Code/i).getAttribute('aria-invalid')).toBe('true');
+    // Caught before the request: nothing was POSTed.
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
+  it('turns away a second code for a chapter that already has one', async () => {
+    const fetchMock = stubFetch({ 'ch1-aaa': 1 });
+    render(<ChapterGate gate={makeGate()} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Register code/i }));
+    await screen.findByText('ch1-aaa');
+    fireEvent.change(screen.getByLabelText(/Code/i), { target: { value: 'CH1-BBB' } });
+    fireEvent.change(screen.getByLabelText('Chapter'), { target: { value: '1' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Register$/i }));
+
+    expect(screen.getByRole('alert').textContent).toMatch(/Chapter 1 already has a code \(ch1-aaa\)/i);
+    expect(screen.getByLabelText('Chapter').getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByLabelText(/Code/i).getAttribute('aria-invalid')).toBeNull();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
+  it('shows a conflict the server reports and flags its field', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/api/chapter-codes') && init?.method === 'POST') {
+        return {
+          ok: false,
+          json: async () => ({ error: 'Chapter 5 already has a code (ch5-old).', field: 'chapter' }),
+        } as Response;
+      }
+      if (url.includes('/api/chapter-codes')) {
+        return { ok: true, json: async () => ({}) } as Response;
+      }
+      return { ok: true, json: async () => ({ chapterCodes: {}, chapterChecks: {} }) } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ChapterGate gate={makeGate()} stats={null} uploadOpen={false} onUploadOpenChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Register code/i }));
+    fireEvent.change(screen.getByLabelText(/Code/i), { target: { value: 'CH5-NEW' } });
+    fireEvent.change(screen.getByLabelText('Chapter'), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Register$/i }));
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/already has a code \(ch5-old\)/i);
+    expect(screen.getByLabelText('Chapter').getAttribute('aria-invalid')).toBe('true');
   });
 
   it('edits a registered code in place', async () => {

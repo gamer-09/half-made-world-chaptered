@@ -374,6 +374,20 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
     setPendingDelete(null);
   };
 
+  // The server keeps one code per chapter and one use per code. Mirror that
+  // here so the clash shows up before a round trip; the server still enforces
+  // it, and its message wins if this list is stale.
+  const findRegisterClash = (key: string, chapter: number, ignore: string | null = null) => {
+    if (key !== ignore && key in codes) {
+      return { field: 'code' as const, message: `Code “${key}” is already registered.` };
+    }
+    const taken = Object.entries(codes).find(([c, ch]) => ch === chapter && c !== ignore);
+    if (taken) {
+      return { field: 'chapter' as const, message: `Chapter ${chapter} already has a code (${taken[0]}).` };
+    }
+    return null;
+  };
+
   // Register a new code, or save the one currently being edited.
   const registerCodeFn = async () => {
     if (registerBusy) return;
@@ -387,11 +401,16 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
       failRegister('Enter a chapter number.', 'chapter');
       return;
     }
+    const editing = editingCode;
+    const clash = findRegisterClash(code.toLowerCase(), ch, editing?.toLowerCase() ?? null);
+    if (clash) {
+      failRegister(clash.message, clash.field);
+      return;
+    }
     if (!canRegister) {
       failRegister('Registration is only available when running locally.');
       return;
     }
-    const editing = editingCode;
     setRegisterBusy(true);
     try {
       const res = await fetch(
@@ -406,7 +425,11 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
       );
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        failRegister(data?.error || 'Could not register that code.');
+        const field = data?.field === 'code' || data?.field === 'chapter' ? data.field : null;
+        failRegister(
+          data?.error || (editing ? 'Could not save that code.' : 'Could not register that code.'),
+          field,
+        );
         return;
       }
       setCodes((prev) => {
@@ -823,6 +846,15 @@ export function ChapterGate({ gate, stats, uploadOpen, onUploadOpenChange }: Cha
                     ? 'Change the code or the chapter it unlocks.'
                     : "Create a code that unlocks a chapter for readers who can't get the chapter text."}
                 </p>
+                {!editingCode && (
+                  <p className="chapter-register-hint">
+                    <i className="fa-solid fa-circle-info" aria-hidden="true" />
+                    <span>
+                      One code per chapter, and a code can only be registered once — duplicates are
+                      turned away.
+                    </span>
+                  </p>
+                )}
                 <div
                   className={`chapter-register-fields${registerDenied ? ' deny' : ''}`}
                   onAnimationEnd={() => setRegisterDenied(false)}
