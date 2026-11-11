@@ -106,9 +106,10 @@ export default function App() {
           const data = await res.json();
           entries = data.entries || [];
         }
-        const nameSet = new Set(
-          (entries || []).map((e: any) => String(e.name || '').toLowerCase()),
+        const entryNames = (entries || []).map((e: any) =>
+          String(e.name || '').toLowerCase().replace(/\s+/g, ' ').trim(),
         );
+        const nameSet = new Set(entryNames);
         const stop = new Set([
           'a', 'an', 'and', 'are', 'as', 'at', 'be', 'been', 'being', 'but', 'by',
           'can', 'could', 'did', 'do', 'does', 'for', 'from', 'had', 'has', 'have',
@@ -130,7 +131,11 @@ export default function App() {
           if (words.some((w) => stop.has(w) && words.length === 2 && stop.has(words[0]) && stop.has(words[1])))
             continue;
           if (candidate.length < 4) continue;
-          if (!nameSet.has(candidate.toLowerCase())) found.add(candidate);
+          const c = candidate.toLowerCase().replace(/\s+/g, ' ').trim();
+          // An entry "exists" if its name contains the full candidate phrase,
+          // so "Fifth Pillar" matches an entry named "The Fifth Pillar".
+          const exists = entryNames.some((n) => n === c || n.includes(c));
+          if (!exists) found.add(candidate);
         }
         if (!cancelled) setMissingMentions([...found].sort());
       } catch {
