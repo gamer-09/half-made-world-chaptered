@@ -242,9 +242,12 @@ body {
   font-weight: 600;
   letter-spacing: 0.01em;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
   white-space: nowrap;
-  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.2s,
-    color 0.2s;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s,
+    transform 0.12s var(--ease-out), color 0.2s;
 }
 
 .btn:hover {
@@ -252,8 +255,27 @@ body {
   background: var(--panel-3);
 }
 
-.btn:active { transform: translateY(1px); }
+.btn:active { transform: translateY(1px) scale(0.97); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Click ripple: a brass flash blooms from the button on press. */
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 50%, rgba(200, 168, 118, 0.4), transparent 62%);
+  opacity: 0;
+  transform: scale(0.25);
+  pointer-events: none;
+}
+
+.btn:active::after { animation: btnPress 0.42s var(--ease-out); }
+
+@keyframes btnPress {
+  0% { opacity: 0.7; transform: scale(0.25); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
 
 .btn-primary {
   background: linear-gradient(135deg, rgba(200, 168, 118, 0.16), rgba(143, 107, 60, 0.12));
@@ -996,6 +1018,7 @@ body {
   background: rgba(6, 8, 13, 0.62);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  animation: modalFadeIn 0.24s ease-out both;
 }
 
 .modal-panel {
@@ -1010,12 +1033,19 @@ body {
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
-  animation: panelIn 0.32s var(--ease-spring) both;
+  animation: modalRise 0.44s var(--ease-spring) both;
 }
 
-@keyframes panelIn {
-  from { opacity: 0; transform: scale(0.94) translateY(8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Popup rises into place with a small spring overshoot. */
+@keyframes modalRise {
+  0% { opacity: 0; transform: translateY(28px) scale(0.96); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .modal-panel--wide { width: min(760px, 100%); }
@@ -1046,10 +1076,11 @@ body {
   color: var(--muted);
   font-size: 13px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, transform 0.12s var(--ease-out);
 }
 
 .modal-close:hover { background: var(--panel-3); color: var(--text); }
+.modal-close:active { transform: scale(0.9); }
 
 /* ============ Entry detail ============ */
 .detail { display: flex; flex-direction: column; gap: var(--sp-4); }
@@ -2632,6 +2663,9 @@ select.input {
     transition-duration: 0.001s !important;
     scroll-behavior: auto !important;
   }
+  .btn:active,
+  .modal-close:active { transform: none; }
+  .btn:active::after { animation: none; }
 }
 
 /* ============ Planning (local dev only) ============ */
