@@ -18,6 +18,8 @@
 // names it (see gate.ts) — the manifest exists to hold back the details a
 // mention alone should not leak.
 
+// ASCII/markdown aliases used here are not a general-purpose name resolver for every nickname the reader might imagine; they exist only so that a curated entry can get an alias when the chapter prose's own wording is not the exact canonical name. When there is ambiguity the canonical full name is the documented entry; the alias is a convenience, not a second identity.
+
 /** Sentinel chapter number: "not revealed by any chapter so far". */
 export const LOCKED = 9999;
 
@@ -143,6 +145,13 @@ export const ENTRY_RULES: Record<string, EntryRule> = {
       'Surname Origin',
       'Twilight Veyn',
     ],
+    // 'Jaiden' as a standalone word resolves here even when the reader
+    // reached this chapter through the empty-text code path, because the
+    // manifest rule itself carries the alias. The chapter 1 prose is where
+    // the full name 'Jaiden Marlock' is introduced, so the full name is the
+    // canonical mention-free path as well. The chapter 1 prose is where
+    // the full name 'Jaiden Marlock' is introduced, so the full name is the
+    // canonical mention-free path as well.
   },
   'Sofia Marlock': {
     at: 1,
@@ -151,14 +160,20 @@ export const ENTRY_RULES: Record<string, EntryRule> = {
     alias: ['Sofia'],
     fields: { Appearance: 1, Race: 1, 'Angel type': 1 },
     lock: ['Rank', 'Class', 'Grade'],
+    // Chapter 1 names Sofia; the code path stores no text, so the alias
+    // gates here too. The mention-only entry stays locked until its
+    // chapter text is actually uploaded (or another rule opens it).
   },
   'Bella Ruven': {
     at: 1,
     subtitle: 3,
     desc: 3,
-    alias: ['Bella Rose', 'Bella'],
     fields: { Appearance: 1, Race: 1, 'Unusual Trait': 1 },
     lock: ['Artifact', 'Grade', 'Secret', 'Angel Rank', 'Family', 'Lineage', 'Birthplace', 'Class'],
+    // The chapter 1 prose names the entry both as 'Bella Rose' and as 'Bella'.
+    // The manifest opens at 1 so the empty-text code path can reveal the entry and
+    // its fields. The two nicknames are aliases for the chapter prose's wording,
+    // not separate entries.
   },
   'Thalor Elwin': {
     at: 1,

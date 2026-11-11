@@ -2,6 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { applyGate, entryRevealAt, type GateConfig } from '../chapters/gate';
 import type { Entry, Relationship } from '../types';
 
+const chapterOneEntryNames = [
+  'Jaiden Marlock',
+  'Sofia Marlock',
+  'Bella Ruven',
+  'Thalor Elwin',
+  'Kael von Ashen',
+  'Auralis Ruby',
+  'The Angel Veyn Vow',
+  'The Academy Grounds',
+  'The Two Sundering Altars',
+  'Jaiden',
+  'Bella',
+];
+
 function entry(name: string, fields: Entry['fields'] = []): Entry {
   return {
     id: name,
@@ -94,5 +108,45 @@ describe('chapter gate', () => {
     expect(gated.entries.map((e) => e.name)).toEqual(['Aldermere']);
     expect(gated.relationships).toHaveLength(1);
     expect(gated.relationships[0].target).toBe('Aldermere');
+  });
+
+  it('redeeming a code unlocks the chapter tier and manifest-gated entries, but not mention-gated entries', () => {
+    const chapter = 1;
+    const data = {
+      entries: chapterOneEntryNames.map((name) => entry(name)),
+      relationships: [] as Relationship[],
+      storyLinks: [],
+    };
+    const gated = applyGate(data, { chapter, uploaded: {} });
+
+    const revealed = gated.entries.map((e) => e.name);
+    for (const name of chapterOneEntryNames) {
+      if (name === 'Jaiden' || name === 'Bella') continue;
+      expect(revealed).toContain(name);
+    }
+
+    expect(gated.entries.find((e) => e.name === 'Jaiden Marlock')?.lockedSubtitle).toBe(true);
+    expect(gated.entries.find((e) => e.name === 'Jaiden Marlock')?.lockedDescription).toBe(true);
+    expect(gated.entries.find((e) => e.name === 'Auralis Ruby')?.lockedSubtitle).toBe(true);
+    expect(gated.entries.find((e) => e.name === 'Auralis Ruby')?.lockedDescription).toBe(true);
+    expect(gated.entries.find((e) => e.name === 'The Academy Grounds')?.lockedSubtitle).toBeUndefined();
+    expect(gated.entries.find((e) => e.name === 'Bella Ruven')?.lockedSubtitle).toBe(true);
+
+    // The manifest rule at 1 means a code for chapter 1 reveals this entry.
+    expect(entryRevealAt('Jaiden Marlock', { chapter: 0, uploaded: {} })).toBe(1);
+    expect(entryRevealAt('Jaiden Marlock', { chapter: 1, uploaded: {} })).toBe(1);
+    expect(entryRevealAt('Bella Rose', { chapter: 1, uploaded: {} })).toBe(Infinity);
+    // A full-name lookup with no uploaded prose hits the manifest without falling back to the mention scan.
+    expect(entryRevealAt('Sofia Marlock', { chapter: 1, uploaded: {} })).toBe(1);
+    expect(entryRevealAt('Bella Ruven', { chapter: 1, uploaded: {} })).toBe(1);
+    expect(entryRevealAt('Bella', { chapter: 1, uploaded: {} })).toBe(Infinity);
+
+    expect(entryRevealAt('Thalor Elwin', { chapter: 1, uploaded: {} })).toBe(1);
+    expect(entryRevealAt('Kael von Ashen', { chapter: 1, uploaded: {} })).toBe(0);
+    expect(entryRevealAt('Auralis Ruby', { chapter: 1, uploaded: {} })).toBe(1);
+    expect(entryRevealAt('The Angel Veyn Vow', { chapter: 1, uploaded: {} })).toBe(1);
+    expect(entryRevealAt('The Academy Grounds', { chapter: 1, uploaded: {} })).toBe(1);
+    expect(entryRevealAt('The Two Sundering Altars', { chapter: 1, uploaded: {} })).toBe(0);
+    expect(entryRevealAt('Bella', { chapter: 1, uploaded: {} })).toBe(Infinity);
   });
 });
