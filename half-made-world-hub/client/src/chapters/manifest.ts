@@ -92,6 +92,12 @@ export const ENTRY_RULES: Record<string, EntryRule> = {
   },
   'Affinity & Awakening': { at: 0 },
   'The Aelthar': { at: 0 },
+  'The Six Pillars of Angels': {
+    at: 1,
+    alias: ['Six Pillars of Angels', 'Six Pillars', 'Pillars of Angels'],
+    desc: LOCKED,
+    fields: { Type: 1 },
+  },
   'Innate Abilities': { at: 3 },
   Humans: { at: 3 },
   'The Hybrid': { at: 3, fields: {} },
@@ -113,6 +119,16 @@ export const ENTRY_RULES: Record<string, EntryRule> = {
   },
   'Angels (Overview)': { at: 0, fields: {} },
   'Demons (Overview)': { at: 0, fields: {} },
+
+  // --- Races named in chapter 1 --------------------------------------------
+  Pallantine: { at: 1, fields: { Appearance: 1 } },
+  Veilborn: { at: 1, fields: { Appearance: 1 } },
+  Malakhim: { at: 1, fields: {} },
+  Griffen: {
+    at: 1,
+    fields: { Appearance: 1, Location: 1, Realm: 1 },
+    lock: ['Hostile', 'Threat Level'],
+  },
 
   // --- Characters -----------------------------------------------------------
   'Aldric Malgrave': { at: 0 },
@@ -180,6 +196,11 @@ export const ENTRY_RULES: Record<string, EntryRule> = {
     fields: { Role: 1, Rank: 1, Title: 1, Pillar: 1, Race: 1 },
     lock: ['Appearance', 'Skills', 'Class', 'Ren Organ', 'Grade'],
   },
+  'Eva Aldermere Divina': {
+    at: 1,
+    fields: { Class: 1, Race: 1, Parent: 1 },
+    lock: ['Rune Star Circle', 'Power Level'],
+  },
   // Named only in later books — held back for now.
   Lisa: { at: LOCKED },
   Ordium: { at: LOCKED },
@@ -196,10 +217,46 @@ export const ENTRY_RULES: Record<string, EntryRule> = {
   },
 
   // --- Angels ---------------------------------------------------------------
+  'Aetherblade Lord Angel': {
+    at: 1,
+    alias: ['Aetherblade Lord'],
+    fields: { Appearance: 1, Type: 1 },
+    lock: ['Skills'],
+  },
+  Virtue: {
+    at: 1,
+    fields: { Appearance: 1, Type: 1 },
+    lock: ['Skills', 'Can be killed by'],
+  },
   'The Angel Veyn Vow': {
     at: 1,
     fields: { Incantation: 1, Halo: 1 },
     lock: ['Nature', 'Seal', 'Breaking'],
+  },
+
+  // --- Demon ranks ----------------------------------------------------------
+  Bloodward: {
+    at: 1,
+    fields: { Appearance: 1, Type: 1 },
+    lock: ['Skills'],
+  },
+  Scourge: {
+    at: 1,
+    fields: { Appearance: 1, Type: 1 },
+    lock: ['Skills'],
+  },
+
+  // --- Pillars --------------------------------------------------------------
+  'Fifth Pillar, Horkous': {
+    at: 1,
+    alias: ['Fifth Pillar'],
+    fields: { 'Held by': 1 },
+  },
+
+  // --- Rune Star circles ----------------------------------------------------
+  '3rd Circle Rune Star': {
+    at: 1,
+    fields: { Circle: 1 },
   },
 
   // --- Grade system ---------------------------------------------------------
@@ -207,6 +264,7 @@ export const ENTRY_RULES: Record<string, EntryRule> = {
   'Grade-Based Combat Power': { at: 0, fields: {} },
   'E Grade': { at: 1 },
   'A Grade': { at: 1 },
+  'D Grade': { at: 1, fields: { Role: 1 } },
   'The Wall': { at: 3 },
 
   // --- Classes --------------------------------------------------------------
@@ -215,7 +273,9 @@ export const ENTRY_RULES: Record<string, EntryRule> = {
   Clergy: { at: 0, fields: { Type: 0 }, lock: ['Skills', 'Grade Progression'] },
   Paladin: { at: 0, fields: { Type: 0 }, lock: ['Skills', 'Grade Progression'] },
   Berserker: { at: 0, fields: { Type: 0 }, lock: ['Skills', 'Grade Progression'] },
-  Archer: { at: 3, fields: { Type: 3 }, lock: ['Skills', 'Grade Progression'] },
+  Archer: { at: 1, fields: { Type: 1 }, lock: ['Skills', 'Grade Progression'] },
+  Enchanter: { at: 1, fields: { Type: 1 }, lock: ['Skills', 'Grade Progression'] },
+  Bladesinger: { at: 1, fields: { Type: 1 }, lock: ['Skills', 'Grade Progression'] },
   'Mage — Rune Star Circles': { at: 3 },
 
   // --- Character forms (deep spoilers, held for later books) ----------------

@@ -9,6 +9,7 @@
     "sync:all": "node server/pipeline.js",
     "seeds:sync": "node server/sync-seeds.js",
     "seeds:check": "node server/sync-seeds.js --check",
+    "audit:chapters": "node server/chapter-audit.js",
     "test:server": "node --test server/__tests__/*.test.js",
     "predev": "node server/sync-seeds.js",
     "prestart": "node server/sync-seeds.js",

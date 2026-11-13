@@ -150,3 +150,43 @@ describe('chapter gate', () => {
     expect(entryRevealAt('Bella', { chapter: 1, uploaded: {} })).toBe(Infinity);
   });
 });
+
+describe('chapter gate — word-for-word matching', () => {
+  const config = (text: string): GateConfig => ({ chapter: 3, uploaded: { 3: text } });
+
+  it('matches hyphenated prose against a spaced entry name', () => {
+    expect(entryRevealAt('E Grade Cohort', config('He scraped by as an E-grade cohort trainee.'))).toBe(3);
+  });
+
+  it('matches digit prose against a spelled-out number', () => {
+    expect(entryRevealAt('Six Pillars of Testing', config('They swore on the 6 Pillars of Testing.'))).toBe(3);
+  });
+
+  it('matches an ordinal both ways round', () => {
+    expect(entryRevealAt('Fourth Circle Rune Star', config('She reached the 4th Circle Rune Star at dawn.'))).toBe(3);
+  });
+
+  it('reveals a four-word name only when all four words appear', () => {
+    expect(entryRevealAt('Third Circle Rune Star', config('The Third Circle Rune Star burned.'))).toBe(3);
+    expect(entryRevealAt('Third Circle Rune Star', config('The Third Circle burned.'))).toBe(Infinity);
+  });
+
+  it('reveals a long name as one exact phrase', () => {
+    expect(
+      entryRevealAt('The Six Pillars of Angel Testing', config('The Six Pillars of Angel Testing convened.')),
+    ).toBe(3);
+    expect(
+      entryRevealAt('The Six Pillars of Angel Testing', config('The Six Pillars of Angels convened.')),
+    ).toBe(Infinity);
+  });
+
+  it('does not reveal a proper-noun entry from a lowercase common word', () => {
+    expect(entryRevealAt('Seal', config('He broke the wax seal on the letter.'))).toBe(Infinity);
+    expect(entryRevealAt('Seal', config('The Seal answered him.'))).toBe(3);
+  });
+
+  it('does not reveal an entry from a partial name', () => {
+    expect(entryRevealAt('Obsidian Blade Lord Angel', config('The Obsidian Blade Lord watched.'))).toBe(Infinity);
+    expect(entryRevealAt('Obsidian Blade Lord Angel', config('The Obsidian Blade Lord Angel watched.'))).toBe(3);
+  });
+});

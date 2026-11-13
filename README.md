@@ -76,6 +76,15 @@ chapters you've unlocked actually put on the page.
 - **Reveal rules** are a curated manifest (`client/src/chapters/manifest.ts`) plus an auto-scan of
   the unlocked chapter text. The manifest is authoritative for curated entries and is where you
   hold back details a mere mention shouldn't leak; the auto-scan only fills in uncurated entries.
+  Both sides match **word for word**, in four passes by name length (one-word, two-word, three-word,
+  four-word, then full names). Hyphens and numerals are normalized ("D-grade" = "D Grade",
+  "6 Pillars" = "Six Pillars"), and a name must be capitalized the way a proper noun is, so the
+  common noun "seal" never reveals the entry `Seal`.
+- **Auditing the chapter files.** `npm run audit:chapters` compares each bundled chapter
+  (`chapter-0.md` … `chapter-3.md`) against every archive entry using those same passes, and lists
+  any entry the chapter names but the manifest still locks. Add `--` and chapter numbers to audit
+  one chapter (`npm run audit:chapters -- 1`), or `--check` to exit non-zero on a gap - useful in CI
+  (`npm run audit:chapters -- --check`). Partial-name matches are listed separately for review.
 - **Chapter codes.** A reader with no chapter file can enter a code instead; every chapter ends
   with one. Codes live in `server/data/chapter-codes.json` and are copied into the bundled
   `snapshot.json`. Locally, the *Register code* button opens a manager that can add, edit, and

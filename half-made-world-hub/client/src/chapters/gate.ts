@@ -5,6 +5,14 @@
 // mention alone should not leak. Everything is computed client-side from the
 // bundled snapshot, so the same gate works in the dev server and in the
 // view-only GitHub Pages build.
+//
+// The scan is word for word, in four passes by name length (see
+// server/chapter-audit.js, which runs the same rules over the chapter files):
+// one-word names, two-word names, three-word names, four-word names, then a
+// full-phrase pass for longer names. Words are normalized on both sides, so
+// "D-grade" in prose matches the entry "D Grade" and "6 Pillars" matches
+// "Six Pillars". A name still has to be capitalized like a proper noun, so the
+// common noun "seal" never reveals the skill entry "Seal".
 import type { Entry, Relationship, StoryLink } from '../types';
 import { ENTRY_RULES, LOCKED, type EntryRule } from './manifest';
 
@@ -35,15 +43,120 @@ export interface GatedArchive {
 
 export const EMPTY_GATE: GateConfig = { chapter: -1, uploaded: {} };
 
-const normName = (s: string) => s.replace(/[\u2014\u2013]/g, '-').replace(/\s+/g, ' ').trim();
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const STOPWORDS = new Set([
+  'the', 'a', 'an', 'of', 'and', 'or', 'no', 'not', 'in', 'on', 'at', 'to', 'for', 'from', 'by', 'with',
+]);
 
-/** Whole-word, case-sensitive match of an exact name inside chapter prose. */
-function mentions(text: string, name: string): boolean {
-  const n = normName(name);
-  if (!n) return false;
-  return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(n)}(?![\\p{L}\\p{N}])`, 'u').test(text);
+// Digits and ordinals become words so "6 Pillars" and "Six Pillars" agree.
+const NUMERALS: Record<string, string> = {
+  '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five',
+  '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten',
+  '11': 'eleven', '12': 'twelve', '13': 'thirteen', '14': 'fourteen', '15': 'fifteen',
+  '16': 'sixteen', '17': 'seventeen', '18': 'eighteen', '19': 'nineteen', '20': 'twenty',
+  '1st': 'first', '2nd': 'second', '3rd': 'third', '4th': 'fourth', '5th': 'fifth',
+  '6th': 'sixth', '7th': 'seventh', '8th': 'eighth', '9th': 'ninth', '10th': 'tenth',
+};
+
+const MAX_PHRASE_WORDS = 8;
+const MAX_POSITIONS = 8;
+
+function splitWords(text: string): string[] {
+  return String(text || '')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
 }
+
+interface TextContext {
+  words: string[];
+  numbers: boolean[];
+  capitals: boolean[];
+  /** Phrase → the first few places it starts in the prose. */
+  index: Map<string, number[]>;
+  count: number;
+}
+
+const textCache = new Map<string, TextContext>();
+
+function textContext(text: string): TextContext {
+  const cached = textCache.get(text);
+  if (cached) return cached;
+
+  const raw = splitWords(text);
+  const words: string[] = [];
+  const numbers: boolean[] = [];
+  const capitals: boolean[] = [];
+  for (const token of raw) {
+    const lower = token.toLowerCase();
+    const numeral = NUMERALS[lower];
+    words.push(numeral ?? lower);
+    numbers.push(numeral !== undefined);
+    capitals.push(/^[A-Z]/.test(token));
+  }
+
+  const index = new Map<string, number[]>();
+  for (let width = 1; width <= MAX_PHRASE_WORDS; width += 1) {
+    for (let i = 0; i + width <= words.length; i += 1) {
+      const key = words.slice(i, i + width).join(' ');
+      const at = index.get(key);
+      if (!at) index.set(key, [i]);
+      else if (at.length < MAX_POSITIONS) at.push(i);
+    }
+  }
+
+  const context: TextContext = {
+    words,
+    numbers,
+    capitals,
+    index,
+    count: words.length,
+  };
+  // Uploaded chapters are large; keep the cache to the ones in play.
+  if (textCache.size >= 8) textCache.clear();
+  textCache.set(text, context);
+  return context;
+}
+
+interface PreparedName {
+  words: string[];
+  /** Index of the first word that is not a stopword, or -1. */
+  capIndex: number;
+  /** True when that word is capitalized in the entry name. */
+  requireCapital: boolean;
+}
+
+function prepareName(name: string): PreparedName {
+  const raw = splitWords(name);
+  const words: string[] = [];
+  let capIndex = -1;
+  let requireCapital = false;
+  for (let i = 0; i < raw.length; i += 1) {
+    const lower = raw[i].toLowerCase();
+    const numeral = NUMERALS[lower];
+    words.push(numeral ?? lower);
+    if (capIndex === -1 && !STOPWORDS.has(words[i])) {
+      capIndex = i;
+      // A digit ("3rd") has no case; a lowercase word sets no expectation.
+      requireCapital = numeral === undefined && /^[A-Z]/.test(raw[i]);
+    }
+  }
+  return { words, capIndex, requireCapital };
+}
+
+/** True when the prose names this entry, word for word, as a proper noun. */
+function mentions(text: string, name: string): boolean {
+  const prepared = prepareName(name);
+  if (!prepared.words.length) return false;
+  const context = textContext(text);
+  const at = context.index.get(prepared.words.join(' '));
+  if (!at) return false;
+  if (!prepared.requireCapital) return true;
+  return at.some(
+    (start) => context.numbers[start + prepared.capIndex] || context.capitals[start + prepared.capIndex],
+  );
+}
+
 
 interface ChapterText {
   n: number;
