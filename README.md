@@ -91,14 +91,12 @@ chapters you've unlocked actually put on the page.
   a locked entry or a name with no entry - useful in CI (`npm run audit:chapters -- --check`).
   Partial-name matches are listed separately for review.
 - **Chapter codes.** A reader with no chapter file can enter a code instead; every chapter ends
-  with one. Codes live in `server/data/chapter-codes.json` and are copied into the bundled
-  `snapshot.json`. Locally, the *Register code* button opens a manager that can add, edit, and
-  delete codes. There is one code per chapter, and a code can't be registered twice — the form
-  says so and refuses the save. Registering a code saves it, regenerates the snapshot, then commits
-  just those two files and pushes, so the deployed site can redeem it; editing or deleting a code
-  pushes the same way. Set `AUTO_PUSH_CHAPTER_CODES=false` to save without pushing. The push is
-  skipped (with a warning) while `server/data/world.json`, `relationships.json`, or
-  `story-links.json` have uncommitted changes, since the snapshot would publish those edits too.
+  with one. Codes live in `server/data/chapter-codes.json` and are folded into the generated
+  `snapshot.json` at build time. Locally, the *Register code* button opens a manager that can add,
+  edit, and delete codes. There is one code per chapter, and a code can't be registered twice — the
+  form says so and refuses the save. Registering a code saves it, regenerates the snapshot, then
+  commits `chapter-codes.json` and pushes, so the deployed site can redeem it; editing or deleting a
+  code pushes the same way. Set `AUTO_PUSH_CHAPTER_CODES=false` to save without pushing.
 - **Author mode.** *Reveal all* bypasses the gate and restores the full archive — and editing —
   for local development. *Re-enable gate* and *Reset* lock it back down. Your chapter progress is
   remembered in `localStorage`.
@@ -245,7 +243,7 @@ Same CRUD shape as relationships, under `/api/story-links`.
 | DELETE | `/api/chapter-codes/:code` | Remove a code; `404` if unknown |
 
 Every write also runs the sync pipeline (regenerating `snapshot.json`) and then, when the hub is
-running from a git checkout, commits and pushes the two chapter-code files automatically. Each
+running from a git checkout, commits and pushes `chapter-codes.json` automatically. Each
 `409` body carries `{ field, error }`, where `field` is `code` or `chapter`.
 
 **Search & AI**
@@ -272,6 +270,6 @@ Two suites, both run locally and in CI:
 Every push to `main` runs the GitHub Actions workflow in `.github/workflows/deploy-ghpages.yml`:
 it installs the client and server dependencies, runs both test suites, checks that the seed files
 still match `server/data/*.json` (`npm run seeds:check`), builds the client, and deploys
-`client/dist` to GitHub Pages. The deploy builds from the **committed**
-`client/public/snapshot.json`, which is why registering a code pushes that file — an uncommitted
-code never reaches the live site.
+`client/dist` to GitHub Pages. The deploy regenerates `client/public/snapshot.json` from the
+committed `server/data/*.json` during the build, so registering a code only has to push
+`chapter-codes.json` — a code that is not committed never reaches the live site.

@@ -1,18 +1,15 @@
 /**
  * Auto-push for chapter codes.
  *
- * A registered code only reaches readers once it is committed: the deployed
- * build ships the committed client/public/snapshot.json, and the server's
- * chapter-codes.json is the source of truth the snapshot is generated from.
- * So when an author registers, edits, or deletes a code locally, the hub
- * commits those two files and pushes them.
+ * A registered code only reaches readers once it is committed: the server's
+ * server/data/chapter-codes.json is the source of truth, and the build folds it
+ * into client/public/snapshot.json, which is generated and gitignored. So when
+ * an author registers, edits, or deletes a code locally, the hub commits that
+ * one file and pushes it.
  *
  * Deliberately narrow:
- *   - only ever stages the two chapter-code artifacts by name (a pathspec
- *     commit), so unrelated work in the tree is never swept in;
- *   - refuses to run while archive data files are dirty, because syncAll()
- *     folds that data into snapshot.json and we would be publishing edits the
- *     author never committed;
+ *   - only ever stages chapter-codes.json by name (a pathspec commit), so
+ *     unrelated work in the tree is never swept in;
  *   - failures are logged and swallowed — registering a code must never fail
  *     because git or the network did.
  *
@@ -24,19 +21,8 @@ const { execFile } = require('child_process');
 const REPO_DIR = path.resolve(__dirname, '..', '..');
 const APP_DIR = 'half-made-world-hub';
 
-// The only files a code change is allowed to publish.
-const CODE_FILES = [
-  `${APP_DIR}/server/data/chapter-codes.json`,
-  `${APP_DIR}/client/public/snapshot.json`,
-];
-
-// If any of these are dirty, snapshot.json would carry uncommitted archive
-// edits, so we hold the push until the author has dealt with them.
-const ARCHIVE_DATA_FILES = [
-  `${APP_DIR}/server/data/world.json`,
-  `${APP_DIR}/server/data/relationships.json`,
-  `${APP_DIR}/server/data/story-links.json`,
-];
+// The only file a code change is allowed to publish.
+const CODE_FILES = [`${APP_DIR}/server/data/chapter-codes.json`];
 
 const DEBOUNCE_MS = 900;
 
@@ -72,6 +58,25 @@ function firstLine(text) {
   return String(text || '').trim().split(/\r?\n/)[0] || '';
 }
 
+/**
+ * The reason a git command failed.
+ *
+ * git writes harmless notices ("LF will be replaced by CRLF") to stderr on
+ * Windows, so the first line is usually not the error. Prefer the fatal line,
+ * then the first line that is not a warning.
+ */
+function failureDetail(err) {
+  const lines = String(err.stderr || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return (
+    lines.find((line) => /^(fatal|error):/i.test(line)) ||
+    lines.find((line) => !/^warning:/i.test(line)) ||
+    err.message
+  );
+}
+
 async function usableRepo() {
   if (repoChecked) return repoUsable;
   repoChecked = true;
@@ -98,15 +103,6 @@ function commitMessage(meta) {
 
 async function commitOnce(meta) {
   try {
-    const dirtyArchive = await git(['status', '--porcelain', '--', ...ARCHIVE_DATA_FILES]);
-    if (dirtyArchive) {
-      console.warn(
-        '[git] chapter code saved but not pushed: archive data files have uncommitted ' +
-          'changes that would be published inside snapshot.json',
-      );
-      return;
-    }
-
     await git(['add', '--', ...CODE_FILES]);
 
     // Pathspec commit, so only these files can enter the commit.
@@ -116,10 +112,9 @@ async function commitOnce(meta) {
     await git(['push', 'origin', branch || 'HEAD']);
     console.log(`[git] chapter codes pushed (${meta.action || 'update'}${meta.code ? ': ' + meta.code : ''})`);
   } catch (err) {
-    const detail = firstLine(err.stderr) || err.message;
     // "nothing to commit" just means the file was already committed.
-    if (/nothing to commit|no changes added/i.test(detail)) return;
-    console.error(`[git] chapter code auto-commit failed: ${detail}`);
+    if (/nothing to commit|no changes added|nothing added to commit/i.test(String(err.stderr || ''))) return;
+    console.error(`[git] chapter code auto-commit failed: ${failureDetail(err)}`);
   }
 }
 
@@ -154,4 +149,4 @@ async function scheduleChapterCodeCommit(meta = {}) {
   if (timer.unref) timer.unref();
 }
 
-module.exports = { scheduleChapterCodeCommit, CODE_FILES, ARCHIVE_DATA_FILES };
+module.exports = { scheduleChapterCodeCommit, CODE_FILES };

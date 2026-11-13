@@ -36,7 +36,7 @@ function withMockTimers() {
   mock.timers.enable({ apis: ['setTimeout'] });
 }
 
-test('commits and pushes only the chapter-code files', async () => {
+test('commits and pushes only the chapter-code file', async () => {
   withMockTimers();
   const { mod, calls, restore } = loadWithGit((args) => {
     if (args[0] === 'rev-parse' && args[1] === '--is-inside-work-tree') {
@@ -51,14 +51,13 @@ test('commits and pushes only the chapter-code files', async () => {
     await settle();
 
     const verbs = calls.map((args) => args[0]);
-    assert.deepStrictEqual(verbs, ['rev-parse', 'status', 'add', 'commit', 'rev-parse', 'push']);
+    assert.deepStrictEqual(verbs, ['rev-parse', 'add', 'commit', 'rev-parse', 'push']);
 
     const commit = calls.find((args) => args[0] === 'commit');
     assert.ok(commit.includes('--'), 'commit is pathspec-scoped');
     for (const file of mod.CODE_FILES) assert.ok(commit.includes(file), `commit includes ${file}`);
-    for (const file of mod.ARCHIVE_DATA_FILES) {
-      assert.ok(!commit.includes(file), `commit excludes ${file}`);
-    }
+    // The generated snapshot is gitignored; naming it would fail the commit.
+    assert.deepStrictEqual(mod.CODE_FILES, ['half-made-world-hub/server/data/chapter-codes.json']);
 
     const push = calls.find((args) => args[0] === 'push');
     assert.deepStrictEqual(push.slice(0, 3), ['push', 'origin', 'main']);
@@ -68,23 +67,34 @@ test('commits and pushes only the chapter-code files', async () => {
   }
 });
 
-test('holds the push while archive data files are uncommitted', async () => {
+test('reports the git error, not a line-ending warning', async () => {
   withMockTimers();
-  const { mod, calls, restore } = loadWithGit((args) => {
+  const { mod, restore } = loadWithGit((args) => {
     if (args[0] === 'rev-parse') return { stdout: 'true\n' };
-    if (args[0] === 'status') return { stdout: ' M half-made-world-hub/server/data/world.json\n' };
+    if (args[0] === 'commit') {
+      return {
+        error: new Error('Command failed: git commit'),
+        stderr:
+          "warning: in the working copy of 'chapter-codes.json', LF will be replaced by CRLF " +
+          'the next time Git touches it\n' +
+          'error: pathspec did not match any file(s) known to git\n',
+      };
+    }
     return {};
   });
+  const logged = [];
+  const original = console.error;
+  console.error = (line) => logged.push(String(line));
   try {
     await mod.scheduleChapterCodeCommit({ action: 'register', code: 'ch2-bbb' });
     mock.timers.tick(1000);
     await settle();
 
-    assert.deepStrictEqual(
-      calls.map((args) => args[0]),
-      ['rev-parse', 'status'],
-    );
+    assert.equal(logged.length, 1);
+    assert.match(logged[0], /pathspec/);
+    assert.doesNotMatch(logged[0], /LF will be replaced/);
   } finally {
+    console.error = original;
     restore();
     mock.timers.reset();
   }
