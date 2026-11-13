@@ -84,9 +84,12 @@ chapters you've unlocked actually put on the page.
   (`chapter-0.md` … `chapter-3.md`) against every archive entry using those same passes, and lists
   any entry the chapter names but the manifest still locks. Manifest aliases count as naming an
   entry (so `Starfruit` reveals `Angel Sustenance`, `Rageborn` reveals the Berserker progression,
-  and `Dark elf` reveals `Veilborn`). Add `--` and chapter numbers to audit
-  one chapter (`npm run audit:chapters -- 1`), or `--check` to exit non-zero on a gap - useful in CI
-  (`npm run audit:chapters -- --check`). Partial-name matches are listed separately for review.
+  and `Dark elf` reveals `Veilborn`). It also lists capitalized names the chapter uses that match no
+  entry name or alias as **missing from the archive** - the gate cannot reveal what `world.json`
+  never stored. Add `--` and chapter numbers to audit
+  one chapter (`npm run audit:chapters -- 1`), or `--check` to exit non-zero on either kind of gap -
+  a locked entry or a name with no entry - useful in CI (`npm run audit:chapters -- --check`).
+  Partial-name matches are listed separately for review.
 - **Chapter codes.** A reader with no chapter file can enter a code instead; every chapter ends
   with one. Codes live in `server/data/chapter-codes.json` and are copied into the bundled
   `snapshot.json`. Locally, the *Register code* button opens a manager that can add, edit, and

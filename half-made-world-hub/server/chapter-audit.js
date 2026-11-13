@@ -28,6 +28,11 @@
  * are reported separately for review: add an alias in the manifest, or leave
  * the entry locked if the prose only brushes past it.
  *
+ * Names the chapter capitalises that match no entry name or alias are reported
+ * as missing entries. That is the other half of the same bug: the gate cannot
+ * reveal a thing the archive never stored, so the prose and world.json have to
+ * be reconciled.
+ *
  * Run: node server/chapter-audit.js [chapter ...] [--check]
  */
 const fs = require('fs');
@@ -53,6 +58,67 @@ const MAX_POSITIONS = 8;
 const STOPWORDS = new Set([
   'the', 'a', 'an', 'of', 'and', 'or', 'no', 'not', 'in', 'on', 'at', 'to', 'for', 'from', 'by', 'with',
 ]);
+
+// Filters for the missing-entry pass. A capitalised phrase has to look like a
+// name: not a sentence opener, not a field label from a reading, not a role.
+const COMMON_WORDS = new Set([
+  'a', 'about', 'above', 'across', 'after', 'again', 'against', 'ah', 'ahh', 'ahhh', 'alright', 'also',
+  'although', 'always', 'am', 'among', 'an', 'and', 'another', 'any', 'anyone', 'anything', 'are', 'around',
+  'as', 'at', 'away', 'back', 'bad', 'be', 'beautiful', 'because', 'become', 'been', 'before', 'behind',
+  'being', 'below', 'beside', 'between', 'beyond', 'big', 'both', 'bring', 'brought', 'but', 'buy', 'by',
+  'call', 'called', 'came', 'can', 'cannot', 'care', 'carry', 'cause', 'change', 'child', 'children', 'city',
+  'close', 'cold', 'come', 'comes', 'coming', 'could', 'course', 'day', 'days', 'dear', 'did', 'different',
+  'do', 'does', 'doing', 'done', 'down', 'each', 'early', 'easy', 'else', 'end', 'enough', 'even', 'ever',
+  'every', 'everybody', 'everyone', 'everything', 'face', 'fact', 'family', 'far', 'feel', 'few', 'find',
+  'fine', 'first', 'five', 'food', 'for', 'forever', 'found', 'four', 'from', 'full', 'get', 'getting', 'give',
+  'given', 'go', 'going', 'gone', 'good', 'got', 'great', 'group', 'grow', 'had', 'half', 'hand', 'happen',
+  'happy', 'hard', 'has', 'have', 'he', 'head', 'hear', 'heard', 'hello', 'help', 'her', 'here', 'herself',
+  'hey', 'hi', 'high', 'him', 'himself', 'his', 'hold', 'home', 'hope', 'house', 'how', 'however', 'huge',
+  'human', 'hundred', 'i', 'idea', 'if', 'important', 'in', 'inside', 'instead', 'into', 'it', 'its',
+  'itself', 'job', 'just', 'keep', 'kept', 'kind', 'know', 'known', 'large', 'last', 'late', 'later', 'least',
+  'left', 'less', 'let', 'life', 'light', 'like', 'likely', 'line', 'little', 'live', 'long', 'look',
+  'looking', 'lot', 'love', 'low', 'made', 'make', 'making', 'man', 'many', 'may', 'maybe', 'me', 'mean',
+  'might', 'mind', 'minute', 'miss', 'moment', 'money', 'month', 'more', 'morning', 'most', 'mother', 'move',
+  'much', 'must', 'my', 'name', 'near', 'need', 'never', 'new', 'next', 'nice', 'night', 'no', 'none', 'nor',
+  'not', 'nothing', 'now', 'number', 'of', 'off', 'often', 'oh', 'ok', 'okay', 'old', 'on', 'once', 'one',
+  'only', 'open', 'or', 'order', 'other', 'ouch', 'our', 'out', 'over', 'own', 'part', 'people', 'perhaps',
+  'person', 'place', 'please', 'point', 'possible', 'power', 'probably', 'problem', 'put', 'question', 'quite',
+  'rather', 'reach', 'read', 'ready', 'real', 'really', 'reason', 'right', 'room', 'run', 'said', 'same',
+  'saw', 'say', 'says', 'school', 'second', 'see', 'seem', 'seemed', 'seen', 'sentence', 'set', 'several',
+  'she', 'should', 'show', 'side', 'since', 'small', 'so', 'some', 'somebody', 'someone', 'something',
+  'sometimes', 'somewhere', 'son', 'soon', 'sort', 'sound', 'still', 'such', 'sure', 'take', 'talk', 'tell',
+  'than', 'thank', 'thanks', 'that', 'the', 'their', 'them', 'themselves', 'then', 'there', 'these', 'they',
+  'thing', 'think', 'this', 'those', 'though', 'thought', 'three', 'through', 'time', 'to', 'today',
+  'together', 'tomorrow', 'tonight', 'too', 'took', 'top', 'toward', 'two', 'under', 'until', 'up', 'upon',
+  'us', 'use', 'used', 'very', 'want', 'was', 'way', 'we', 'well', 'went', 'were', 'what', 'when', 'where',
+  'whether', 'which', 'while', 'who', 'whole', 'why', 'will', 'with', 'within', 'without', 'woman', 'word',
+  'work', 'world', 'would', 'wow', 'yeah', 'year', 'years', 'yep', 'yes', 'yet', 'you', 'young', 'your',
+]);
+
+const FIELD_WORDS = new Set([
+  'affinity', 'age', 'angel', 'appearance', 'circle', 'class', 'corresponding', 'element', 'gender', 'grade',
+  'level', 'name', 'power', 'race', 'rank', 'realm', 'rune', 'skill', 'skills', 'star', 'stage', 'starting',
+  'title', 'type',
+]);
+
+const ROLE_WORDS = new Set([
+  'acolyte', 'admiral', 'apprentice', 'attendant', 'bartender', 'butler', 'captain', 'chancellor', 'chief',
+  'clerk', 'commander', 'dean', 'doctor', 'elder', 'general', 'guard', 'guards', 'headmaster', 'healer',
+  'instructor', 'innkeeper', 'king', 'lady', 'lieutenant', 'lord', 'madam', 'maid', 'master', 'merchant',
+  'mistress', 'monitor', 'nurse', 'officer', 'prefect', 'priest', 'priestess', 'prince', 'princess',
+  'principal', 'professor', 'receptionist', 'sergeant', 'servant', 'soldier', 'soldiers',
+  'student', 'students', 'teacher', 'valedictorian', 'waiter', 'waitress',
+]);
+
+const STRUCTURE_WORDS = new Set([
+  'afterword', 'appendix', 'book', 'chapter', 'chapters', 'contents', 'epilogue', 'foreword', 'interlude',
+  'part', 'prologue', 'scene',
+]);
+
+const TITLE_RE = /^(mr|mrs|ms|miss|sir|lady|lord|princess|prince|king|queen|doctor|dr|master|mistress|madam)\.?\s+/i;
+const ORDINAL_RE = /^(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\s+/i;
+const POSSESSIVE_RE = /['\u2019]s\b/gi;
+const CONTRACTION_RE = /['\u2019](d|m|ll|re|ve|t)\b/i;
 
 // Digits and ordinals become words so "6 Pillars" and "Six Pillars" agree.
 const NUMERALS = {
@@ -156,6 +222,145 @@ function partialMatch(preparedName, context) {
   return null;
 }
 
+function normalisePhrase(value) {
+  return String(value || '')
+    .replace(POSSESSIVE_RE, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/** Every word sequence inside an entry name or alias, so "Marlock" counts as known. */
+function knownPhrases(entries, rules = {}) {
+  const known = new Set();
+  for (const entry of entries) {
+    const sources = [entry.name, ...(rules[entry.name]?.alias ?? [])];
+    for (const source of sources) {
+      const words = normalisePhrase(source).split(' ').filter(Boolean);
+      for (let width = 1; width <= words.length; width += 1) {
+        for (let i = 0; i + width <= words.length; i += 1) {
+          known.add(words.slice(i, i + width).join(' '));
+        }
+      }
+    }
+  }
+  return known;
+}
+
+function isKnownPhrase(key, known) {
+  if (known.has(key)) return true;
+  // "Mages" and "Stars" are just plurals of archive words.
+  return key.endsWith('s') && known.has(key.slice(0, -1));
+}
+
+function isShouted(word) {
+  return word.length > 1 && /[A-Z]/.test(word) && word === word.toUpperCase();
+}
+
+function trimCandidate(raw) {
+  let phrase = String(raw || '').replace(POSSESSIVE_RE, '').replace(TITLE_RE, '').replace(ORDINAL_RE, '').trim();
+  const words = phrase.split(/\s+/).filter(Boolean);
+  // Reading blocks label their values: "Starting Class grade", "Race Rank".
+  while (words.length && FIELD_WORDS.has(words[words.length - 1].toLowerCase())) words.pop();
+  phrase = words.join(' ');
+  return phrase;
+}
+
+function looksLikeName(phrase) {
+  const words = normalisePhrase(phrase).split(' ').filter(Boolean);
+  if (!words.length) return false;
+  const significant = words.filter(
+    (word) =>
+      !COMMON_WORDS.has(word) &&
+      !FIELD_WORDS.has(word) &&
+      !ROLE_WORDS.has(word) &&
+      !STRUCTURE_WORDS.has(word),
+  );
+  // A one-word name needs one real word; a phrase needs two, so "I Look" and
+  // "Hey Bella" do not become names.
+  return words.length === 1 ? significant.length === 1 : significant.length >= 2;
+}
+
+/**
+ * Names the chapter capitalises that no entry name or alias covers.
+ *
+ * Multi-word names count from one mention. Single words need a second mention
+ * or a reading `Name:` line, so "Infront" and stray sentence openers stay out.
+ * A shorter candidate is dropped when a longer one starts with it, so
+ * "Mr Grin" does not produce both "Grin" and "Grin Holly".
+ */
+function unarchivedNames(entries, text, rules = {}) {
+  const known = knownPhrases(entries, rules);
+  const found = new Map();
+
+  const add = (raw, at, named = false) => {
+    const rawKey = normalisePhrase(String(raw || '').replace(POSSESSIVE_RE, ''));
+    if (rawKey && isKnownPhrase(rawKey, known)) return;
+    const phrase = trimCandidate(raw);
+    if (!phrase || !looksLikeName(phrase)) return;
+    const key = normalisePhrase(phrase);
+    if (!key || isKnownPhrase(key, known)) return;
+    const record = found.get(key) ?? { name: phrase, count: 0, at, named: false };
+    record.count += 1;
+    record.named = record.named || named;
+    if (at < record.at) record.at = at;
+    found.set(key, record);
+  };
+
+  // Reading blocks spell names out, so trust them even on one mention.
+  for (const match of text.matchAll(/^[ \t]*Name:[ \t]*(.+)$/gm)) {
+    add(match[1].trim(), match.index, true);
+  }
+
+  const tokens = [];
+  const re = /[A-Za-z][A-Za-z'\u2019-]*/g;
+  let match;
+  while ((match = re.exec(text))) tokens.push({ word: match[0], at: match.index });
+
+  // A word the prose also writes in lowercase is a common word, not a name.
+  const lowercaseWords = new Set(
+    tokens.filter((token) => /^[a-z]/.test(token.word)).map((token) => token.word.toLowerCase()),
+  );
+
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (!/^[A-Z]/.test(token.word) || isShouted(token.word) || CONTRACTION_RE.test(token.word)) continue;
+
+    const before = text.slice(0, token.at).replace(/[ \t]+$/, '');
+    const boundary = before.replace(/["'\u201c\u201d\u2018\u2019\]]+$/, '');
+    const prev = boundary.slice(-1);
+    const sentenceStart = !prev || /[.!?\r\n]/.test(prev);
+
+    const parts = [token.word];
+    let j = i + 1;
+    while (j < tokens.length) {
+      const next = tokens[j];
+      if (!/^[A-Z]/.test(next.word) || isShouted(next.word) || CONTRACTION_RE.test(next.word)) break;
+      const gap = text.slice(tokens[j - 1].at + tokens[j - 1].word.length, next.at);
+      // Never join across a line break: reading blocks stack fields one per line.
+      if (!/^[ \t'\u2019-]*$/.test(gap)) break;
+      parts.push(next.word);
+      j += 1;
+    }
+
+    const singleAtStart = sentenceStart && parts.length === 1;
+    if (singleAtStart && lowercaseWords.has(token.word.toLowerCase())) {
+      i = j - 1;
+      continue;
+    }
+    if (!sentenceStart || parts.length === 1) add(parts.join(' '), token.at);
+    i = j - 1;
+  }
+
+  const keys = [...found.keys()];
+  return keys
+    .filter((key) => !keys.some((other) => other !== key && other.startsWith(key + ' ')))
+    .map((key) => found.get(key))
+    .filter((record) => record.named || record.name.split(' ').length > 1 || record.count >= 2)
+    .sort((a, b) => a.at - b.at)
+    .map((record) => ({ name: record.name, mentions: record.count }));
+}
+
 /** Pull ENTRY_RULES out of the client manifest and evaluate its literals. */
 function loadManifestRules(file = MANIFEST_FILE) {
   const source = fs.readFileSync(file, 'utf8');
@@ -178,7 +383,8 @@ function revealAt(rule) {
  * Compare every entry name against one chapter text.
  *
  * Returns exact matches grouped by name width, the matches the manifest does
- * not reveal at this chapter, and partial-name candidates for review.
+ * not reveal at this chapter, names with no archive entry, and partial-name
+ * candidates for review.
  */
 function auditChapter(entries, text, rules = {}, chapter = null) {
   const context = textContext(text);
@@ -186,6 +392,7 @@ function auditChapter(entries, text, rules = {}, chapter = null) {
   const longer = [];
   const missing = [];
   const partials = [];
+  const unarchived = unarchivedNames(entries, text, rules);
 
   for (const entry of entries) {
     const name = prepareName(entry.name);
@@ -225,7 +432,7 @@ function auditChapter(entries, text, rules = {}, chapter = null) {
     });
   }
 
-  return { chapter, words: context.count, passes, longer, missing, partials };
+  return { chapter, words: context.count, passes, longer, missing, partials, unarchived };
 }
 
 function loadEntries() {
@@ -268,6 +475,12 @@ function report(result) {
       console.log(`    - ${p.name} [${p.category}] ← "${p.phrase}" (${p.width}/${p.nameWords} words)`);
     }
   }
+  if (result.unarchived.length) {
+    console.log('  named in this chapter but missing from the archive:');
+    for (const r of result.unarchived) {
+      console.log(`    - ${r.name} (${r.mentions} mention${r.mentions === 1 ? '' : 's'})`);
+    }
+  }
   console.log('');
 }
 
@@ -281,7 +494,8 @@ function main(argv) {
 
   const entries = loadEntries();
   const rules = loadManifestRules();
-  let failures = 0;
+  let locked = 0;
+  let unarchived = 0;
 
   for (const chapter of chapters) {
     const text = readChapter(chapter);
@@ -291,15 +505,23 @@ function main(argv) {
     }
     const result = auditChapter(entries, text, rules, chapter);
     report(result);
-    failures += result.missing.length;
+    locked += result.missing.length;
+    unarchived += result.unarchived.length;
   }
 
-  if (check && failures) {
-    console.error(`${failures} entr${failures === 1 ? 'y is' : 'ies are'} named by a chapter but still locked.`);
+  if (check && locked) {
+    console.error(`${locked} entr${locked === 1 ? 'y is' : 'ies are'} named by a chapter but still locked.`);
+  }
+  if (check && unarchived) {
+    console.error(
+      `${unarchived} name${unarchived === 1 ? ' is' : 's are'} used by a chapter but missing from the archive.`,
+    );
+  }
+  if (check && (locked || unarchived)) {
     process.exitCode = 1;
     return;
   }
-  if (check) console.log('All named entries are revealed by the chapter that names them.');
+  if (check) console.log('All named entries are revealed, and every name has an archive entry.');
 }
 
 if (require.main === module) main(process.argv.slice(2));
@@ -312,6 +534,8 @@ module.exports = {
   nameInText,
   textContext,
   partialMatch,
+  unarchivedNames,
+  knownPhrases,
   PASSES,
   CHAPTER_FILES,
 };

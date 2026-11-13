@@ -103,3 +103,50 @@ test('does not count a partial name as a match', () => {
   assert.deepEqual(result.missing, []);
   assert.deepEqual(result.partials.map((p) => p.name), ['Obsidian Blade Lord Angel']);
 });
+
+test('flags names the chapter uses that have no archive entry', () => {
+  const result = auditChapter(
+    [entry('Bella Ruven'), entry('Virtue')],
+    'Bella Ruven listened. "My name is Grin Holly," he said. Ivy waved. Ivy smiled. Vareth waited. Vareth did not move.',
+    {},
+    1,
+  );
+
+  const flagged = result.unarchived.map((r) => r.name);
+  assert.deepEqual(flagged, ['Grin Holly', 'Ivy', 'Vareth']);
+  assert.equal(result.unarchived.find((r) => r.name === 'Ivy').mentions, 2);
+});
+
+test('does not flag roles, reading labels, plurals, or shouted lines as names', () => {
+  const result = auditChapter(
+    [entry('Malakhim'), entry('Mage'), entry('Archer')],
+    'HEADMASTER.\n\nName: Ivy\n\nRace: Malakhim Angel\n\nClass: Archer Starting Class\n\nThe Mages carved Rune Stars.',
+    {},
+    1,
+  );
+
+  // Ivy is a reading name; the rest are labels, plurals, or all-caps.
+  assert.deepEqual(result.unarchived.map((r) => r.name), ['Ivy']);
+});
+
+test('does not flag an alias the manifest already covers', () => {
+  const result = auditChapter(
+    [entry('Angel Sustenance')],
+    'He ate a starfruit at breakfast.',
+    { 'Angel Sustenance': { at: 1, alias: ['starfruit'] } },
+    1,
+  );
+
+  assert.deepEqual(result.unarchived, []);
+});
+
+test('leaves common sentence openers and one-off words alone', () => {
+  const result = auditChapter(
+    [],
+    'If it was quiet, everyone would just go. Please, forever, somewhere. Infront stood a man.',
+    {},
+    1,
+  );
+
+  assert.deepEqual(result.unarchived, []);
+});
