@@ -76,6 +76,21 @@ test('reports a named entry the manifest still locks', () => {
   assert.deepEqual(result.missing.map((r) => r.name), ['Virtue']);
 });
 
+test('treats a manifest alias as the chapter naming the entry', () => {
+  const result = auditChapter(
+    [entry('Angel Sustenance'), entry('Berserker — Rage Ascension')],
+    'He ate a starfruit, and his stage was Rageborn.',
+    {
+      'Angel Sustenance': { at: 1, alias: ['starfruit'] },
+      'Berserker — Rage Ascension': { at: 1, alias: ['Rageborn'] },
+    },
+    1,
+  );
+
+  assert.deepEqual(names(result), ['Angel Sustenance', 'Berserker — Rage Ascension']);
+  assert.deepEqual(result.missing, []);
+});
+
 test('does not count a partial name as a match', () => {
   const result = auditChapter(
     [entry('Obsidian Blade Lord Angel')],

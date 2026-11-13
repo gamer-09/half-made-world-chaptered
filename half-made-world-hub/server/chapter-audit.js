@@ -18,9 +18,11 @@
  * reveal the skill entry "Seal".
  *
  * For each pass it reports how many entries the chapter names and, using the
- * client manifest, how many of those the chapter actually reveals. Pass
- * `--check` to exit non-zero when a named entry is still locked at or before
- * the chapter it appears in — the bug this tool exists to catch.
+ * client manifest, how many of those the chapter actually reveals. Manifest
+ * aliases count as the chapter naming the entry, so "Starfruit" reveals
+ * "Angel Sustenance". Pass `--check` to exit non-zero when a named entry is
+ * still locked at or before the chapter it appears in — the bug this tool
+ * exists to catch.
  *
  * Partial name matches ("Aetherblade Lord" inside "Aetherblade Lord Angel")
  * are reported separately for review: add an alias in the manifest, or leave
@@ -189,10 +191,15 @@ function auditChapter(entries, text, rules = {}, chapter = null) {
     const name = prepareName(entry.name);
     if (!name.words.length) continue;
 
-    const revealedAt = revealAt(rules[entry.name]);
+    const rule = rules[entry.name];
+    const revealedAt = revealAt(rule);
     const visible = chapter === null || revealedAt <= chapter;
+    // A manifest alias (e.g. "starfruit" for Angel Sustenance) counts as the
+    // chapter naming the entry, the same way the gate treats it.
+    const candidates = [entry.name, ...(rule?.alias ?? [])];
+    const matched = candidates.some((candidate) => nameInText(prepareName(candidate), context));
 
-    if (nameInText(name, context)) {
+    if (matched) {
       const record = {
         name: entry.name,
         category: entry.category,

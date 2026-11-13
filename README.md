@@ -82,7 +82,9 @@ chapters you've unlocked actually put on the page.
   common noun "seal" never reveals the entry `Seal`.
 - **Auditing the chapter files.** `npm run audit:chapters` compares each bundled chapter
   (`chapter-0.md` … `chapter-3.md`) against every archive entry using those same passes, and lists
-  any entry the chapter names but the manifest still locks. Add `--` and chapter numbers to audit
+  any entry the chapter names but the manifest still locks. Manifest aliases count as naming an
+  entry (so `Starfruit` reveals `Angel Sustenance`, `Rageborn` reveals the Berserker progression,
+  and `Dark elf` reveals `Veilborn`). Add `--` and chapter numbers to audit
   one chapter (`npm run audit:chapters -- 1`), or `--check` to exit non-zero on a gap - useful in CI
   (`npm run audit:chapters -- --check`). Partial-name matches are listed separately for review.
 - **Chapter codes.** A reader with no chapter file can enter a code instead; every chapter ends

@@ -143,7 +143,7 @@ describe('chapter gate', () => {
 
     expect(entryRevealAt('Thalor Elwin', { chapter: 1, uploaded: {} })).toBe(1);
     expect(entryRevealAt('Kael von Ashen', { chapter: 1, uploaded: {} })).toBe(0);
-    expect(entryRevealAt('Auralis Ruby', { chapter: 1, uploaded: {} })).toBe(1);
+    expect(entryRevealAt('Auralis Ruby', { chapter: 1, uploaded: {} })).toBe(0);
     expect(entryRevealAt('The Angel Veyn Vow', { chapter: 1, uploaded: {} })).toBe(1);
     expect(entryRevealAt('The Academy Grounds', { chapter: 1, uploaded: {} })).toBe(1);
     expect(entryRevealAt('The Two Sundering Altars', { chapter: 1, uploaded: {} })).toBe(0);

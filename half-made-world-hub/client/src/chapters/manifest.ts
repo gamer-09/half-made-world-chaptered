@@ -122,7 +122,7 @@ export const ENTRY_RULES: Record<string, EntryRule> = {
 
   // --- Races named in chapter 1 --------------------------------------------
   Pallantine: { at: 1, fields: { Appearance: 1 } },
-  Veilborn: { at: 1, fields: { Appearance: 1 } },
+  Veilborn: { at: 1, alias: ['dark elf'], fields: { Appearance: 1 } },
   Malakhim: { at: 1, fields: {} },
   Griffen: {
     at: 1,
@@ -208,7 +208,7 @@ export const ENTRY_RULES: Record<string, EntryRule> = {
 
   // --- Artifacts ------------------------------------------------------------
   'Auralis Ruby': {
-    at: 1,
+    at: 0,
     subtitle: LOCKED,
     desc: LOCKED,
     alias: ['pendant', 'ruby', 'ruby pendant'],
@@ -277,6 +277,26 @@ export const ENTRY_RULES: Record<string, EntryRule> = {
   Enchanter: { at: 1, fields: { Type: 1 }, lock: ['Skills', 'Grade Progression'] },
   Bladesinger: { at: 1, fields: { Type: 1 }, lock: ['Skills', 'Grade Progression'] },
   'Mage — Rune Star Circles': { at: 3 },
+
+  // --- Class progression stages named in chapter 1 --------------------------
+  'Berserker — Rage Ascension': {
+    at: 1,
+    alias: ['Rageborn'],
+    fields: { Rageborn: 1 },
+  },
+  'Archer — Shot Mastery Tiers': {
+    at: 1,
+    alias: ['Enchanter Archer'],
+    fields: { 'Enchanter Archer': 1 },
+  },
+
+  // --- Daily life -----------------------------------------------------------
+  // Starfruit is described inside Angel Sustenance, so naming any of the
+  // prized angel foods reveals that entry.
+  'Angel Sustenance': {
+    at: 1,
+    alias: ['starfruit', 'moonbread', 'dewwine'],
+  },
 
   // --- Character forms (deep spoilers, held for later books) ----------------
   'Jaiden Marlock — Normal': {
