@@ -55,11 +55,6 @@ interface Geom {
 interface StoryWebProps {
   entries: Entry[]; relationships: Relationship[]; storyLinks: StoryLink[];
   onNodeClick: (entry: Entry) => void;
-  onAdd?: () => void;
-  onEditStory?: (link: StoryLink) => void;
-  onDeleteStory?: (link: StoryLink) => void;
-  onEditRel?: (rel: Relationship) => void;
-  onDeleteRel?: (rel: Relationship) => void;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -408,9 +403,7 @@ function NamePopup({ name, x, y, onClose }: { name: string; x: number; y: number
 }
 
 // ── Main component ────────────────────────────────────────────────────
-export function StoryWeb({
-  entries, relationships, storyLinks, onNodeClick, onAdd, onEditStory, onDeleteStory, onEditRel, onDeleteRel,
-}: StoryWebProps) {
+export function StoryWeb({ entries, relationships, storyLinks, onNodeClick }: StoryWebProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: string; dx: number; dy: number; moved: boolean; startX: number; startY: number } | null>(null);
@@ -826,9 +819,6 @@ export function StoryWeb({
   const dim = hoverId !== null || selectedEdge !== null;
   const fiberOpacity = dim ? 0.05 : typeFilter ? 0.06 : 0.14;
 
-  const selectedStory = selectedEdge?.kind === 'story' ? storyLinks.find((s) => s.id === selectedEdge.id) : undefined;
-  const selectedRel = selectedEdge?.kind === 'relationship' ? relationships.find((r) => r.id === selectedEdge.id) : undefined;
-
   return (
     <div className="map-view">
       <div className="map-toolbar">
@@ -846,11 +836,6 @@ export function StoryWeb({
           >
             ◎ Focus
           </button>
-          {onAdd && (
-            <button className="btn btn-primary btn-sm" onClick={onAdd}>
-              ＋ Add Link
-            </button>
-          )}
         </div>
       </div>
 
@@ -1034,26 +1019,6 @@ export function StoryWeb({
               <strong>{selectedEdge.source}</strong> → <strong>{selectedEdge.target}</strong>
             </p>
             {selectedEdge.description && <p className="map-edge-desc">{selectedEdge.description}</p>}
-            {onEditStory && onDeleteStory && selectedStory && (
-              <div className="map-edge-actions">
-                <button className="btn btn-secondary btn-sm" onClick={() => onEditStory?.(selectedStory)}>
-                  <i className="fa-solid fa-pen" style={{ fontSize: 11 }} /> Edit
-                </button>
-                <button className="btn btn-danger btn-sm" onClick={() => onDeleteStory?.(selectedStory)}>
-                  <i className="fa-solid fa-trash" style={{ fontSize: 11 }} /> Delete
-                </button>
-              </div>
-            )}
-            {onEditRel && onDeleteRel && selectedRel && (
-              <div className="map-edge-actions">
-                <button className="btn btn-secondary btn-sm" onClick={() => onEditRel?.(selectedRel)}>
-                  <i className="fa-solid fa-pen" style={{ fontSize: 11 }} /> Edit
-                </button>
-                <button className="btn btn-danger btn-sm" onClick={() => onDeleteRel?.(selectedRel)}>
-                  <i className="fa-solid fa-trash" style={{ fontSize: 11 }} /> Delete
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>

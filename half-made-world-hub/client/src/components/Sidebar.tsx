@@ -13,7 +13,6 @@ interface SidebarProps {
   searchRef?: Ref<HTMLInputElement>;
   onSearch: (q: string) => void;
   onSelectCategory: (category: string) => void;
-  onAdd?: () => void;
   onOpenMap: () => void;
   onOpenWeb: () => void;
   onOpenBlocks: () => void;
@@ -29,7 +28,6 @@ export function Sidebar({
   searchRef,
   onSearch,
   onSelectCategory,
-  onAdd,
   onOpenMap,
   onOpenWeb,
   onOpenBlocks,
@@ -56,15 +54,6 @@ export function Sidebar({
           <p className="brand-sub">Worldbuilding Archive</p>
         </div>
       </div>
-
-      {onAdd && (
-        <button
-          className="btn btn-primary btn-block"
-          onClick={onAdd}
-        >
-          <span className="btn-icon">+</span> Add Entry
-        </button>
-      )}
 
       <p className="sidebar-group-label">Explore</p>
 

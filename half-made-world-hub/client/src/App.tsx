@@ -2,12 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   ConnectionInfo,
   Entry,
-  EntryInput,
   RecentEntry,
-  Relationship,
-  RelationshipInput,
-  StoryLink,
-  StoryLinkInput,
 } from './types';
 import { Sidebar, type ViewMode } from './components/Sidebar';
 import { QueryChatRoom } from './components/QueryChatRoom';
@@ -19,17 +14,15 @@ import * as liveApi from './api';
 import { Dashboard } from './components/Dashboard';
 import { EntryCard } from './components/EntryCard';
 import { EntryDetail } from './components/EntryDetail';
-import { EntryForm } from './components/EntryForm';
 import { RelationshipMap } from './components/RelationshipMap';
 import { StoryWeb } from './components/StoryWeb';
 import { BlockMap } from './components/BlockMap';
-import { LinkForm } from './components/LinkForm';
 import { Modal } from './components/Modal';
 import { ChapterGate } from './components/ChapterGate';
 import { useChapterGate } from './hooks/useChapterGate';
 import { setActiveGate } from './chapters/gate';
-import { RELATIONSHIP_TYPES, relationshipType } from './relationshipTypes';
-import { STORY_LINK_TYPES, storyLinkType } from './storyLinkTypes';
+import { relationshipType } from './relationshipTypes';
+import { storyLinkType } from './storyLinkTypes';
 import { findCharacter } from './nameMatch';
 import { categoryColor } from './theme';
 
@@ -167,12 +160,6 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Entry | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<Entry | null>(null);
-  const [relFormOpen, setRelFormOpen] = useState(false);
-  const [editingRel, setEditingRel] = useState<Relationship | null>(null);
-  const [linkFormOpen, setLinkFormOpen] = useState(false);
-  const [editingLink, setEditingLink] = useState<StoryLink | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [toast, setToast] = useState('');
   const toastTimer = useRef<number | undefined>(undefined);
@@ -234,7 +221,7 @@ export default function App() {
     if (fresh && fresh !== selected) setSelected(fresh);
   }, [entries, selected]);
 
-  // Keyboard shortcuts: / focuses search, n adds an entry, 1-5 switch views.
+  // Keyboard shortcuts: / focuses search, 1-5 switch views.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -250,9 +237,6 @@ export default function App() {
       if (e.key === '/') {
         e.preventDefault();
         searchRef.current?.focus();
-      } else if (e.key === 'n' || e.key === 'N') {
-        if (canEdit) openAdd();
-        else showToast('This is a view-only build — new entries can’t be added here.');
       } else if (e.key === '1') {
         setView('browse');
       } else if (e.key === '2') {
@@ -267,7 +251,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [canEdit]);
+  }, []);
 
   const categories = useMemo(() => {
     const counts = new Map<string, number>();
@@ -292,7 +276,6 @@ export default function App() {
     [entries],
   );
 
-  const characterNames = useMemo(() => characterEntries.map((e) => e.name), [characterEntries]);
   const allEntryNames = useMemo(() => entries.map((e) => e.name), [entries]);
 
   const resolveName = useCallback(
@@ -381,185 +364,6 @@ export default function App() {
     if (entry) setSelected(entry);
   };
 
-  // --- Entry CRUD ---------------------------------------------------------
-  const openAdd = () => {
-    setEditing(null);
-    setFormOpen(true);
-  };
-
-  const openEdit = (entry: Entry) => {
-    setEditing(entry);
-    setSelected(null);
-    setFormOpen(true);
-  };
-
-  const closeForm = () => {
-    setFormOpen(false);
-    setEditing(null);
-  };
-
-  const handleSave = async (input: EntryInput) => {
-    if (!canEdit) {
-      showToast('Editing is disabled in the view-only build.');
-      return;
-    }
-    try {
-      if (editing) {
-        await liveApi.updateEntry(editing.id, input);
-        showToast(`Updated “${input.name}”.`);
-      } else {
-        await liveApi.createEntry(input);
-        showToast(`Added “${input.name}” to ${input.category}.`);
-      }
-      closeForm();
-      await load();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Save failed.');
-    }
-  };
-
-  const handleDelete = async (entry: Entry) => {
-    if (!canEdit) {
-      showToast('Editing is disabled in the view-only build.');
-      return;
-    }
-    if (!window.confirm(`Delete “${entry.name}” permanently?`)) return;
-    try {
-      await liveApi.deleteEntry(entry.id);
-      setSelected(null);
-      showToast(`Deleted “${entry.name}”.`);
-      await load();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Delete failed.');
-    }
-  };
-
-  const handleDeleteCategory = async (category: string) => {
-    if (!canEdit) {
-      showToast('Editing is disabled in the view-only build.');
-      return;
-    }
-    const count = categories.find((c) => c.name === category)?.count ?? 0;
-    if (
-      !window.confirm(
-        `Delete the “${category}” category and all ${count} of its entries?\n\n` +
-          `Any relationship or story links pointing at those entries will be removed too. This can’t be undone.`,
-      )
-    ) {
-      return;
-    }
-    try {
-      await liveApi.deleteCategory(category);
-      if (activeCategory === category) setActiveCategory('All');
-      showToast(`Deleted the “${category}” category and its ${count} entries.`);
-      await load();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Delete failed.');
-    }
-  };
-
-  // --- Relationship CRUD --------------------------------------------------
-  const openAddRel = () => {
-    setEditingRel(null);
-    setRelFormOpen(true);
-  };
-
-  const openEditRel = (rel: Relationship) => {
-    setRelFormOpen(true);
-    setEditingRel(rel);
-  };
-
-  const closeRelForm = () => {
-    setRelFormOpen(false);
-    setEditingRel(null);
-  };
-
-  const handleSaveRel = async (input: RelationshipInput) => {
-    if (!canEdit) {
-      showToast('Editing is disabled in the view-only build.');
-      return;
-    }
-    try {
-      if (editingRel) {
-        await liveApi.updateRelationship(editingRel.id, input);
-        showToast(`Updated the relationship: ${input.source} → ${input.target}.`);
-      } else {
-        await liveApi.createRelationship(input);
-        showToast(`Linked ${input.source} → ${input.target}.`);
-      }
-      closeRelForm();
-      await load();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Save failed.');
-    }
-  };
-
-  const handleDeleteRel = async (rel: Relationship) => {
-    if (!canEdit) {
-      showToast('Editing is disabled in the view-only build.');
-      return;
-    }
-    if (!window.confirm(`Delete the “${rel.label}” link (${rel.source} → ${rel.target})?`)) return;
-    try {
-      await liveApi.deleteRelationship(rel.id);
-      showToast(`Removed the link between ${rel.source} and ${rel.target}.`);
-      await load();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Delete failed.');
-    }
-  };
-
-  // --- Story link CRUD ----------------------------------------------------
-  const openAddLink = () => {
-    setEditingLink(null);
-    setLinkFormOpen(true);
-  };
-
-  const openEditLink = (link: StoryLink) => {
-    setLinkFormOpen(true);
-    setEditingLink(link);
-  };
-
-  const closeLinkForm = () => {
-    setLinkFormOpen(false);
-    setEditingLink(null);
-  };
-
-  const handleSaveLink = async (input: StoryLinkInput) => {
-    if (!canEdit) {
-      showToast('Editing is disabled in the view-only build.');
-      return;
-    }
-    try {
-      if (editingLink) {
-        await liveApi.updateStoryLink(editingLink.id, input);
-        showToast(`Updated the link: ${input.source} → ${input.target}.`);
-      } else {
-        await liveApi.createStoryLink(input);
-        showToast(`Connected ${input.source} → ${input.target}.`);
-      }
-      closeLinkForm();
-      await load();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Save failed.');
-    }
-  };
-
-  const handleDeleteLink = async (link: StoryLink) => {
-    if (!canEdit) {
-      showToast('Editing is disabled in the view-only build.');
-      return;
-    }
-    if (!window.confirm(`Delete the “${link.label}” link (${link.source} → ${link.target})?`)) return;
-    try {
-      await liveApi.deleteStoryLink(link.id);
-      showToast(`Removed the link between ${link.source} and ${link.target}.`);
-      await load();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Delete failed.');
-    }
-  };
-
   // --- Misc ---------------------------------------------------------------
   const handleReset = async () => {
     if (!canEdit) {
@@ -624,7 +428,6 @@ export default function App() {
         searchRef={searchRef}
         onSearch={setSearch}
         onSelectCategory={selectCategory}
-        onAdd={canEdit ? openAdd : undefined}
         onOpenMap={() => setView('map')}
         onOpenWeb={() => setView('web')}
         onOpenBlocks={() => setView('blocks')}
@@ -667,24 +470,6 @@ export default function App() {
           <div className="header-actions">
             <SoundToggle />
             <LofiPlayer />
-            {!isMapView && !isWebView && !isBlocksView && activeCategory !== 'All' && canEdit && (
-              <button
-                className="btn btn-danger btn-sm"
-                onClick={() => handleDeleteCategory(activeCategory)}
-              >
-                🗑 Delete “{activeCategory}”
-              </button>
-            )}
-            {isMapView && canEdit && (
-              <button className="btn btn-primary btn-sm" onClick={openAddRel}>
-                ＋ Add Relationship
-              </button>
-            )}
-            {isWebView && canEdit && (
-              <button className="btn btn-primary btn-sm" onClick={openAddLink}>
-                ＋ Add Link
-              </button>
-            )}
             <button
               className="btn btn-ghost btn-sm"
               onClick={exportMarkdown}
@@ -756,11 +541,6 @@ export default function App() {
             relationships={relationships}
             storyLinks={storyLinks}
             onNodeClick={setSelected}
-            onAdd={canEdit ? openAddLink : undefined}
-            onEditStory={canEdit ? openEditLink : undefined}
-            onDeleteStory={canEdit ? handleDeleteLink : undefined}
-            onEditRel={canEdit ? openEditRel : undefined}
-            onDeleteRel={canEdit ? handleDeleteRel : undefined}
           />
         ) : isChatView ? (
           <QueryChatRoom onOpenEntry={openEntryByName} entryNames={allEntryNames} />
@@ -768,21 +548,13 @@ export default function App() {
           relationships.length === 0 ? (
             <div className="empty-state">
               <p className="empty-title">No relationships yet.</p>
-              <p className="empty-text">Link two characters to start weaving the web.</p>
-              {canEdit && (
-                <button className="btn btn-primary" onClick={openAddRel}>
-                  ＋ Add Relationship
-                </button>
-              )}
+              <p className="empty-text">The threads will appear once the archive records one.</p>
             </div>
           ) : (
             <RelationshipMap
               relationships={relationships}
               characterEntries={characterEntries}
               onNodeClick={setSelected}
-              onAdd={canEdit ? openAddRel : undefined}
-              onEdit={canEdit ? openEditRel : undefined}
-              onDelete={canEdit ? handleDeleteRel : undefined}
             />
           )
         ) : showDashboard ? (
@@ -794,17 +566,11 @@ export default function App() {
             onSelectCategory={selectCategory}
             onSelectTag={selectTag}
             onOpenEntry={openEntryByName}
-            onAdd={canEdit ? openAdd : undefined}
           />
         ) : filtered.length === 0 ? (
           <div className="empty-state">
             <p className="empty-title">Nothing found.</p>
-            <p className="empty-text">Try a different search, or add a brand-new entry to the world.</p>
-            {canEdit && (
-              <button className="btn btn-primary" onClick={openAdd}>
-                ＋ Add Entry
-              </button>
-            )}
+            <p className="empty-text">Try a different search, or another category.</p>
           </div>
         ) : (
           <>
@@ -847,47 +613,7 @@ export default function App() {
           <EntryDetail
             entry={selected}
             connections={connections}
-            onEdit={canEdit ? openEdit : undefined}
-            onDelete={canEdit ? handleDelete : undefined}
             onOpenEntry={openEntryByName}
-          />
-        </Modal>
-      )}
-
-      {formOpen && canEdit && (
-        <Modal onClose={closeForm} wide>
-          <EntryForm
-            categories={categories.map((c) => c.name)}
-            existingNames={allEntryNames}
-            editing={editing}
-            onSave={handleSave}
-            onCancel={closeForm}
-          />
-        </Modal>
-      )}
-
-      {relFormOpen && canEdit && (
-        <Modal onClose={closeRelForm} wide>
-          <LinkForm
-            title="Relationship"
-            names={characterNames}
-            types={RELATIONSHIP_TYPES}
-            editing={editingRel}
-            onSave={handleSaveRel}
-            onCancel={closeRelForm}
-          />
-        </Modal>
-      )}
-
-      {linkFormOpen && canEdit && (
-        <Modal onClose={closeLinkForm} wide>
-          <LinkForm
-            title="Story Link"
-            names={allEntryNames}
-            types={STORY_LINK_TYPES}
-            editing={editingLink}
-            onSave={handleSaveLink}
-            onCancel={closeLinkForm}
           />
         </Modal>
       )}

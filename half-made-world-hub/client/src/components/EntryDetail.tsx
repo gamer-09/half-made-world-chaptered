@@ -7,8 +7,6 @@ import { DescriptionRenderer } from './DescriptionRenderer';
 interface EntryDetailProps {
   entry: Entry;
   connections: ConnectionInfo[];
-  onEdit?: (entry: Entry) => void;
-  onDelete?: (entry: Entry) => void;
   onOpenEntry: (name: string) => void;
 }
 
@@ -21,7 +19,7 @@ function LockedNote({ chapter, compact }: { chapter?: number; compact?: boolean 
   );
 }
 
-export function EntryDetail({ entry, connections, onEdit, onDelete, onOpenEntry }: EntryDetailProps) {
+export function EntryDetail({ entry, connections, onOpenEntry }: EntryDetailProps) {
   const accent = categoryColor(entry.category);
   const lockedFields = entry.fields.filter((f) => f.locked).length;
   return (
@@ -126,17 +124,6 @@ export function EntryDetail({ entry, connections, onEdit, onDelete, onOpenEntry 
             ))}
           </div>
         </section>
-      )}
-
-      {onEdit && (
-        <div className="detail-actions">
-          <button className="btn btn-secondary" onClick={() => onEdit?.(entry)}>
-            <i className="fa-solid fa-pen" style={{ fontSize: 11 }} /> Edit
-          </button>
-          <button className="btn btn-danger" onClick={() => onDelete?.(entry)}>
-            <i className="fa-solid fa-trash" style={{ fontSize: 11 }} /> Delete
-          </button>
-        </div>
       )}
     </div>
   );

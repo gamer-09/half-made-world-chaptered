@@ -2,7 +2,7 @@
 
 **[Open the live archive →](https://gamer-09.github.io/half-made-world-chaptered/)**
 
-Reference archive for the *Half-Made World* fantasy novel — a searchable, editable knowledge base
+Reference archive for the *Half-Made World* fantasy novel — a searchable knowledge base
 for its lore, magic systems, and characters, built as an interactive web app so world details never
 have to live buried in a single document again.
 
@@ -20,8 +20,7 @@ locked. See [The chapter gate](#the-chapter-gate).
 The archive holds **1090 entries across 57 categories** — Demon/Angel/Class/Hybrid Skills, Titles,
 Rules & Notes, Characters, Classes, Class Progression, Grade System, Rune Star Circles, Monsters,
 Rifts, Locations, Items, Magic Systems, Realms, Coins, Clan, Economy, Organizations, Calendar, Combat
-Mechanics, Laws & Justice, Academy, and many more — all browsable, searchable, and editable through
-the UI. **28 characters**, **4387 story links**, and **81 relationships** tie it all together.
+Mechanics, Laws & Justice, Academy, and many more — all browsable and searchable in the reader. **28 characters**, **4387 story links**, and **81 relationships** tie it all together.
 
 ## Quick start
 
@@ -32,8 +31,8 @@ npm run dev            # server on :5001, client on :5173
 ```
 
 Open http://localhost:5173. On the first run the server writes `server/data/*.json` from the
-bundled seeds, which were transcribed from the reference document; every edit after that is made
-and saved through the UI itself.
+bundled seeds, which were transcribed from the reference document; run `npm run sync:all` after
+editing a JSON file to regenerate the seeds and the client snapshot.
 
 | Command | What it does |
 | --- | --- |
@@ -53,7 +52,6 @@ and saved through the UI itself.
 | Key | Action |
 | --- | --- |
 | `/` | Focus the search box |
-| `n` | Add an entry (author mode / local dev only — otherwise a "locked" toast) |
 | `1` – `5` | Browse · Relationship Map · Story Web · Block Map · Query Chat |
 
 ## The chapter gate
@@ -97,12 +95,15 @@ chapters you've unlocked actually put on the page.
   form says so and refuses the save. Registering a code saves it, regenerates the snapshot, then
   commits `chapter-codes.json` and pushes, so the deployed site can redeem it; editing or deleting a
   code pushes the same way. Set `AUTO_PUSH_CHAPTER_CODES=false` to save without pushing.
-- **Author mode.** *Reveal all* bypasses the gate and restores the full archive — and editing —
-  for local development. *Re-enable gate* and *Reset* lock it back down. Your chapter progress is
+- **Author mode.** The local build is a reader plus the chapter-code manager. Entries, relationships,
+  and story links are read-only in the UI — edit `server/data/*.json` directly and run
+  `npm run sync:all` to publish the change. *Reset* forgets your chapter progress; *Reset to seed*
+  (in the footer, local dev only) restores the original data files. Your chapter progress is
   remembered in `localStorage`.
 
-While the gate is on, the hub is **read-only** even in local dev: the gate is the reader's mode,
-so add/edit/delete only appear once you switch to author mode.
+The hub is **read-only** for the archive itself in every build: there is no add/edit/delete UI for
+entries or for the map views. The server still exposes the write endpoints for scripts and for the
+original app, but the local reader does not call them.
 
 ## Interface notes
 
@@ -136,9 +137,9 @@ colored, arrowed edges — who knows whom, who loves whom, who betrayed whom.
 - **Drag** characters to rearrange the layout.
 - **Hover** a character to trace all of its links; dim everything else.
 - **Click a character** to open their full archive entry.
-- **Click an edge** to read its story (with edit/delete actions).
-- **Add relationships** through a structured form (source, target, type, label, notes) — types drive
-  edge colors, e.g. `betrayed`, `ordered killed`, `right-hand of`, `unaware of`.
+- **Click an edge** to read its story.
+- Relationship types drive edge colors, e.g. `betrayed`, `ordered killed`, `right-hand of`,
+  `unaware of`. The map is read-only; edit `server/data/relationships.json` to change a link.
 
 Relationships persist in `server/data/relationships.json`.
 
@@ -151,9 +152,9 @@ colored, arrowed links like `located in`, `guards`, `rules`, `kills`, `sealed in
 
 - **Category chips** above the map toggle whole categories on/off (e.g. hide Classes to declutter).
 - **Drag** any node to rearrange; **hover** traces its connections; **click** a node opens its entry;
-  **click** a link reads its story (with edit/delete).
+  **click** a link reads its story.
 - Node ring colors match the archive category colors; link colors match their type legend.
-- **Add links** through the same structured form as relationships (any entry name is suggested).
+- The web is read-only; add or change links by editing `server/data/story-links.json`.
 
 Story links persist in `server/data/story-links.json`.
 

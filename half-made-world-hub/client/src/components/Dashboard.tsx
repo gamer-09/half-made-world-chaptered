@@ -10,7 +10,6 @@ interface DashboardProps {
   onSelectCategory: (category: string) => void;
   onSelectTag: (tag: string) => void;
   onOpenEntry: (name: string) => void;
-  onAdd?: () => void;
 }
 
 const HIGHLIGHTS = ['Artifacts', 'Classes', 'Characters', 'Plot', 'Monsters', 'Realms'];
@@ -23,7 +22,6 @@ export function Dashboard({
   onSelectCategory,
   onSelectTag,
   onOpenEntry,
-  onAdd,
 }: DashboardProps) {
   const [tagQuery, setTagQuery] = useState('');
 
@@ -44,16 +42,9 @@ export function Dashboard({
             </h2>
             <p className="hero-text">
               Four realms, angel and demon ranks, divine weapons, and a hundred threads of lore — all of it
-              seeded from your reference document. Browse the archive, or forge something new.
+              seeded from your reference document. Browse the archive and follow the threads.
             </p>
           </div>
-          {onAdd && (
-            <div className="hero-side">
-              <button className="btn btn-primary" onClick={onAdd}>
-                <i className="fa-solid fa-plus" style={{ fontSize: 11 }} /> New entry
-              </button>
-            </div>
-          )}
         </section>
 
         <aside className="dash-rail">

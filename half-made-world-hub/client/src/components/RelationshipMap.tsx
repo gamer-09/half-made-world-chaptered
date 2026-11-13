@@ -9,14 +9,9 @@ interface MapProps {
   relationships: Relationship[];
   characterEntries: Entry[];
   onNodeClick: (entry: Entry) => void;
-  onAdd?: () => void;
-  onEdit?: (rel: Relationship) => void;
-  onDelete?: (rel: Relationship) => void;
 }
 
-export function RelationshipMap({
-  relationships, characterEntries, onNodeClick, onAdd, onEdit, onDelete,
-}: MapProps) {
+export function RelationshipMap({ relationships, characterEntries, onNodeClick }: MapProps) {
   const [selectedEdge, setSelectedEdge] = useState<Relationship | null>(null);
   const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
 
@@ -110,11 +105,6 @@ export function RelationshipMap({
               <i className="fa-solid fa-circle-nodes" style={{ fontSize: 12 }} /> 2D
             </button>
           </div>
-          {onAdd && (
-            <button className="btn btn-primary btn-sm" onClick={onAdd}>
-              <i className="fa-solid fa-plus" style={{ fontSize: 11 }} /> Add Relationship
-            </button>
-          )}
         </div>
       </div>
 
@@ -153,17 +143,6 @@ export function RelationshipMap({
             <strong>{selectedEdge.source}</strong> → <strong>{selectedEdge.target}</strong>
           </p>
           {selectedEdge.description && <p className="map-edge-desc">{selectedEdge.description}</p>}
-
-          {onEdit && (
-            <div className="map-edge-actions">
-              <button className="btn btn-secondary btn-sm" onClick={() => onEdit?.(selectedEdge)}>
-                <i className="fa-solid fa-pen" style={{ fontSize: 11 }} /> Edit
-              </button>
-              <button className="btn btn-danger btn-sm" onClick={() => onDelete?.(selectedEdge)}>
-                <i className="fa-solid fa-trash" style={{ fontSize: 11 }} /> Delete
-              </button>
-            </div>
-          )}
         </div>
       )}
 
