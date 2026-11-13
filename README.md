@@ -260,9 +260,9 @@ Two suites, both run locally and in CI:
 - **Client** (`npm test --prefix client`, Vitest) — the search index, the description renderer and
   markdown tables, the chapter gate (entry/field reveal, auto-scan, link pruning, and the
   upload/redeem/register flows), the snapshot loader, and the sound effects.
-- **Server** (`npm run test:server`, `node --test`) — the AI provider fallback chain, the
-  chapter-code rules (one code per chapter, no duplicate code names), and the chapter-code
-  auto-push guards.
+- **Server** (`npm run test:server`, `node --test`) - the AI provider fallback chain, the
+  chapter-code rules (one code per chapter, no duplicate code names), the chapter-code
+  auto-push guards, and the word-for-word chapter audit.
 
 Every push to `main` runs the GitHub Actions workflow in `.github/workflows/deploy-ghpages.yml`:
 it installs the client and server dependencies, runs both test suites, checks that the seed files
